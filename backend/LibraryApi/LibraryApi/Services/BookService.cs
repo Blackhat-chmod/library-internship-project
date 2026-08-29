@@ -5,36 +5,36 @@ namespace LibraryApi.Services
 {
     public class BookService : IBookService
     {
-        private readonly IBookRepository repository;
+        private readonly IBookRepository bookRepository;
 
-        public BookService(IBookRepository repository)
+        public BookService(IBookRepository bookRepository)
         {
-            this.repository = repository;
+            this.bookRepository = bookRepository;
         }
 
-        public List<Book> GetBooks()
+        public async Task<List<Book>> GetAllBooksAsync()
         {
-            return repository.GetAll();
+            return await bookRepository.GetAllAsync();
         }
 
-        public Book? GetBook(int id)
+        public async Task<Book?> GetBookByIdAsync(int id)
         {
-            return repository.GetById(id);
+            return await bookRepository.GetByIdAsync(id);
         }
 
-        public void AddBook(Book book)
+        public async Task<Book> AddBookAsync(Book book)
         {
-            repository.Add(book);
+            return await bookRepository.AddAsync(book);
         }
 
-        public bool UpdateBook(Book book)
+        public async Task<bool> UpdateBookAsync(Book book)
         {
-            return repository.Update(book);
+            return await bookRepository.UpdateAsync(book);
         }
 
-        public bool DeleteBook(int id)
+        public async Task<bool> DeleteBookAsync(int id)
         {
-            return repository.Delete(id);
+            return await bookRepository.DeleteAsync(id);
         }
     }
 }
