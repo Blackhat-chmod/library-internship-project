@@ -1,10 +1,30 @@
-﻿namespace LibraryApi.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace LibraryApi.Models
 {
     public class Book
     {
-        public int Id { get; set; }
-        public string Title { get; set; } = "";
-        public string Author { get; set; } = "";
-        public string Category { get; set; } = "";
+        public int BookId { get; set; }
+
+        [NotMapped]
+        public int Id
+        {
+            get => BookId;
+            set => BookId = value;
+        }
+
+        public string Title { get; set; } = string.Empty;
+
+        public int AuthorId { get; set; }
+
+        public Author? AuthorEntity { get; set; }
+
+        [NotMapped]
+        public string Author { get; set; } = string.Empty;
+
+        [NotMapped]
+        public string Category { get; set; } = string.Empty;
+
+        public List<Category> Categories { get; set; } = new List<Category>();
     }
 }
