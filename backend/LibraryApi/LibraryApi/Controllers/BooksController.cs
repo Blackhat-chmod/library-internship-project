@@ -8,23 +8,25 @@ namespace LibraryApi.Controllers
     [Route("api/[controller]")]
     public class BooksController : ControllerBase
     {
-        private readonly IBookService service;
+        private readonly IBookService bookService;
 
-        public BooksController(IBookService service)
+        public BooksController(IBookService bookService)
         {
-            this.service = service;
+            this.bookService = bookService;
         }
 
         [HttpGet]
-        public IActionResult GetAllBooks()
+        public async Task<IActionResult> GetAllBooks()
         {
-            return Ok(service.GetBooks());
+            var books = await bookService.GetAllBooksAsync();
+
+            return Ok(books);
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetBookById(int id)
+        public async Task<IActionResult> GetBookById(int id)
         {
-            Book? book = service.GetBook(id);
+            var book = await bookService.GetBookByIdAsync(id);
 
             if (book == null)
             {
@@ -35,48 +37,83 @@ namespace LibraryApi.Controllers
         }
 
         [HttpPost]
-        public IActionResult AddBook(Book book)
+        public async Task<IActionResult> AddBook(Book book)
         {
             if (string.IsNullOrWhiteSpace(book.Title))
             {
-                return BadRequest("Book title is required.");
+                return BadRequest("Title is required.");
             }
 
-            service.AddBook(book);
+            try
+            {
+                var createdBook = await bookService.AddBookAsync(book);
 
-            return CreatedAtAction(
-                nameof(GetBookById),
-                new { id = book.Id },
-                book
-            );
+                return CreatedAtAction(
+                    nameof(GetBookById),
+                    new { id = createdBook.BookId },
+                    createdBook
+                );
+            }
+            catch (Exception)
+            {
+                return StatusCode(
+                    500,
+                    "An error occurred while saving the book."
+                );
+            }
         }
 
         [HttpPut("{id}")]
-        public IActionResult UpdateBook(int id, Book book)
+        public async Task<IActionResult> UpdateBook(int id, Book book)
         {
-            book.Id = id;
-
-            bool updated = service.UpdateBook(book);
-
-            if (!updated)
+            if (string.IsNullOrWhiteSpace(book.Title))
             {
-                return NotFound("Book not found.");
+                return BadRequest("Title is required.");
             }
 
-            return Ok("Book updated successfully.");
+            book.BookId = id;
+
+            try
+            {
+                bool updated = await bookService.UpdateBookAsync(book);
+
+                if (!updated)
+                {
+                    return NotFound("Book not found.");
+                }
+
+                return Ok("Book updated successfully.");
+            }
+            catch (Exception)
+            {
+                return StatusCode(
+                    500,
+                    "An error occurred while updating the book."
+                );
+            }
         }
 
         [HttpDelete("{id}")]
-        public IActionResult DeleteBook(int id)
+        public async Task<IActionResult> DeleteBook(int id)
         {
-            bool deleted = service.DeleteBook(id);
-
-            if (!deleted)
+            try
             {
-                return NotFound("Book not found.");
-            }
+                bool deleted = await bookService.DeleteBookAsync(id);
 
-            return Ok("Book deleted successfully.");
+                if (!deleted)
+                {
+                    return NotFound("Book not found.");
+                }
+
+                return Ok("Book deleted successfully.");
+            }
+            catch (Exception)
+            {
+                return StatusCode(
+                    500,
+                    "An error occurred while deleting the book."
+                );
+            }
         }
     }
 }

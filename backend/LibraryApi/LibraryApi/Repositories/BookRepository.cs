@@ -1,49 +1,46 @@
-﻿using LibraryApi.Models;
+﻿using LibraryApi.Data;
+using LibraryApi.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace LibraryApi.Repositories
 {
     public class BookRepository : IBookRepository
     {
-        private readonly List<Book> books = new()
-        {
-            new Book
-            {
-                Id = 1,
-                Title = "C# Basics",
-                Author = "John Smith",
-                Category = "Programming"
-            },
-            new Book
-            {
-                Id = 2,
-                Title = "Angular Essentials",
-                Author = "Sarah Khan",
-                Category = "Web Development"
-            }
-        };
+        private readonly LibraryDbContext context;
 
-        public List<Book> GetAll()
+        public BookRepository(LibraryDbContext context)
         {
-            return books;
+            this.context = context;
         }
 
-        public Book? GetById(int id)
+        public async Task<List<Book>> GetAllAsync()
         {
-            return books.FirstOrDefault(b => b.Id == id);
+            return await context.Books
+                .Include(book => book.AuthorEntity)
+                .Include(book => book.Categories)
+                .ToListAsync();
         }
 
-        public void Add(Book book)
+        public async Task<Book?> GetByIdAsync(int id)
         {
-            book.Id = books.Count == 0
-                ? 1
-                : books.Max(b => b.Id) + 1;
-
-            books.Add(book);
+            return await context.Books
+                .Include(book => book.AuthorEntity)
+                .Include(book => book.Categories)
+                .FirstOrDefaultAsync(book => book.BookId == id);
         }
 
-        public bool Update(Book book)
+        public async Task<Book> AddAsync(Book book)
         {
-            Book? existingBook = GetById(book.Id);
+            context.Books.Add(book);
+            await context.SaveChangesAsync();
+
+            return book;
+        }
+
+        public async Task<bool> UpdateAsync(Book book)
+        {
+            Book? existingBook = await context.Books
+                .FirstOrDefaultAsync(b => b.BookId == book.BookId);
 
             if (existingBook == null)
             {
@@ -51,22 +48,26 @@ namespace LibraryApi.Repositories
             }
 
             existingBook.Title = book.Title;
-            existingBook.Author = book.Author;
-            existingBook.Category = book.Category;
+            existingBook.AuthorId = book.AuthorId;
+
+            await context.SaveChangesAsync();
 
             return true;
         }
 
-        public bool Delete(int id)
+        public async Task<bool> DeleteAsync(int id)
         {
-            Book? book = GetById(id);
+            Book? book = await context.Books
+                .FirstOrDefaultAsync(b => b.BookId == id);
 
             if (book == null)
             {
                 return false;
             }
 
-            books.Remove(book);
+            context.Books.Remove(book);
+            await context.SaveChangesAsync();
+
             return true;
         }
     }

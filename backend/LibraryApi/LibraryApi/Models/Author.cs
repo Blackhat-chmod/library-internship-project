@@ -1,4 +1,6 @@
-﻿namespace LibraryApi.Models
+﻿using System.Text.Json.Serialization;
+
+namespace LibraryApi.Models
 {
     public class Author
     {
@@ -6,6 +8,7 @@
 
         public string FullName { get; set; } = string.Empty;
 
+        [JsonIgnore]
         public List<Book> Books { get; set; } = new List<Book>();
     }
 }
