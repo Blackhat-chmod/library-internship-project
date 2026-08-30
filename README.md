@@ -2,18 +2,24 @@
 
 This repository contains the Library Management project developed during the AI Software Development Internship.
 
-The project began in Week 2 with an ASP.NET Core Web API and Angular frontend. In Week 3 it will be extended with SQL Server, Entity Framework Core, live Angular API integration, Git/GitHub workflow, and a standalone AI/Python script.
+The project began in Week 2 with an ASP.NET Core Web API and Angular frontend.
+
+In Week 3, the project was extended with SQL Server, Entity Framework Core, database-backed CRUD operations, Angular API integration, Git/GitHub workflow, a basic login foundation, and a standalone Python AI script.
+
+---
 
 ## Tech Stack
 
 ### Backend
+
 - C#
 - ASP.NET Core Web API
-- Swagger
 - Entity Framework Core
 - SQL Server
+- Swagger
 
 ### Frontend
+
 - Angular
 - TypeScript
 - Reactive Forms
@@ -21,75 +27,41 @@ The project began in Week 2 with an ASP.NET Core Web API and Angular frontend. I
 - HttpClient
 
 ### AI Track
-- Python
-- Virtual Environment
-- LLM API
 
-### Tools
+- Python
+- Groq API
+- LLM integration
+
+### Development Tools
+
 - Visual Studio
 - Visual Studio Code
+- SQL Server Management Studio
 - Git
 - GitHub
+- Swagger
 - Postman
+
+---
 
 ## Project Structure
 
+```text
 library-internship-project/
-- backend/LibraryApi
-- frontend/library-angular
-- sql
-- docs
-- ai-scripts
-
-## Backend Architecture
-
-Controller -> Service -> Repository -> Data Store
-
-## Run Backend
-
-Open the ASP.NET Core project inside:
-
-backend/LibraryApi
-
-Run it using Visual Studio.
-
-Swagger can then be used to test the API.
-
-## Run Frontend
-
-Open a terminal inside:
-
-frontend/library-angular
-
-Install dependencies if required:
-
-npm install
-
-Run:
-
-ng serve
-
-Open:
-
-http://localhost:4200
-
-## API Endpoints
-
-| Method | Endpoint | Purpose |
-|---|---|---|
-| GET | /api/Books | Get all books |
-| GET | /api/Books/{id} | Get book by ID |
-| POST | /api/Books | Add a book |
-| PUT | /api/Books/{id} | Update a book |
-| DELETE | /api/Books/{id} | Delete a book |
-
-## Week 3 Goals
-
-- Design relational database structure
-- Configure SQL Server
-- Add Entity Framework Core
-- Replace in-memory storage with database storage
-- Connect Angular to the live API
-- Add loading and error handling
-- Practice feature branches and Pull Requests
-- Build the first standalone Python AI script
+│
+├── backend/
+│   └── LibraryApi/
+│
+├── frontend/
+│   └── library-angular/
+│
+├── sql/
+│   └── week3-relational-schema.sql
+│
+├── docs/
+│   └── week3-auth-notes.md
+│
+├── ai-scripts/
+│   └── book_summary.py
+│
+└── README.md
