@@ -1,5 +1,13 @@
 <h2>Book List</h2>
 
+@if (loading) {
+  <p>Loading books...</p>
+}
+
+@if (errorMessage) {
+  <p>{{ errorMessage }}</p>
+}
+
 <table border="1">
   <thead>
     <tr>
@@ -11,12 +19,20 @@
   </thead>
 
   <tbody>
-    @for (book of books; track book.id) {
+    @for (book of books; track book.bookId) {
       <tr>
-        <td>{{ book.id }}</td>
+        <td>{{ book.bookId }}</td>
         <td>{{ book.title }}</td>
-        <td>{{ book.author }}</td>
-        <td>{{ book.category }}</td>
+        <td>{{ book.authorEntity?.fullName || 'N/A' }}</td>
+        <td>
+          @if (book.categories && book.categories.length > 0) {
+            @for (category of book.categories; track category.categoryId) {
+              {{ category.categoryName }}
+            }
+          } @else {
+            N/A
+          }
+        </td>
       </tr>
     }
   </tbody>

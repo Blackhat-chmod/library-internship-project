@@ -1,22 +1,29 @@
 <h2>Add Book</h2>
 
-<form [formGroup]="bookForm" (ngSubmit)="addBook()">
+<form [formGroup]="bookForm" (ngSubmit)="submitForm()">
 
-  <label>Title</label>
-  <input type="text" formControlName="title">
+  <div>
+    <label>Title:</label>
+    <input type="text" formControlName="title">
 
-  <br><br>
+    @if (bookForm.get('title')?.touched && bookForm.get('title')?.invalid) {
+      <span>Title is required.</span>
+    }
+  </div>
 
-  <label>Author</label>
-  <input type="text" formControlName="author">
+  <br>
 
-  <br><br>
+  <div>
+    <label>Author ID:</label>
+    <input type="number" formControlName="authorId">
+  </div>
 
-  <label>Category</label>
-  <input type="text" formControlName="category">
-
-  <br><br>
+  <br>
 
   <button type="submit">Add Book</button>
 
 </form>
+
+@if (errorMessage) {
+  <p>{{ errorMessage }}</p>
+}
