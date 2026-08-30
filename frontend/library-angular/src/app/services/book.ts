@@ -1,32 +1,33 @@
 import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { Book } from '../book';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BookService {
+  private apiUrl = 'https://localhost:7272/api/Books';
 
-  private books: Book[] = [
-    {
-      id: 1,
-      title: 'C# Basics',
-      author: 'John Smith',
-      category: 'Programming'
-    },
-    {
-      id: 2,
-      title: 'Angular Essentials',
-      author: 'Sarah Khan',
-      category: 'Web Development'
-    }
-  ];
+  constructor(private http: HttpClient) {}
 
-  getBooks(): Book[] {
-    return this.books;
+  getBooks(): Observable<Book[]> {
+    return this.http.get<Book[]>(this.apiUrl);
   }
 
-  addBook(book: Book) {
-    book.id = this.books.length + 1;
-    this.books.push(book);
+  getBookById(id: number): Observable<Book> {
+    return this.http.get<Book>(`${this.apiUrl}/${id}`);
+  }
+
+  addBook(book: Book): Observable<Book> {
+    return this.http.post<Book>(this.apiUrl, book);
+  }
+
+  updateBook(id: number, book: Book): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${id}`, book);
+  }
+
+  deleteBook(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${id}`);
   }
 }

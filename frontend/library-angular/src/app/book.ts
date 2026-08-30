@@ -1,6 +1,20 @@
+export interface Author {
+  authorId: number;
+  fullName: string;
+}
+
+export interface Category {
+  categoryId: number;
+  categoryName: string;
+}
+
 export interface Book {
-  id: number;
+  bookId: number;
+  id?: number;
   title: string;
-  author: string;
-  category: string;
+  authorId: number;
+  authorEntity?: Author | null;
+  author?: string;
+  category?: string;
+  categories: Category[];
 }
