@@ -1,5 +1,6 @@
 ﻿using LibraryApi.Models;
 using LibraryApi.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LibraryApi.Controllers
@@ -36,6 +37,7 @@ namespace LibraryApi.Controllers
             return Ok(book);
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> AddBook(Book book)
         {
@@ -63,6 +65,7 @@ namespace LibraryApi.Controllers
             }
         }
 
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateBook(int id, Book book)
         {
@@ -93,6 +96,7 @@ namespace LibraryApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteBook(int id)
         {
