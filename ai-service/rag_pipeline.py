@@ -1,4 +1,6 @@
+import json
 import os
+from pathlib import Path
 
 import chromadb
 import httpx
@@ -7,6 +9,11 @@ from sentence_transformers import SentenceTransformer
 
 
 load_dotenv()
+
+
+BASE_DIR = Path(__file__).resolve().parent
+
+CORPUS_FILE = BASE_DIR / "library_corpus.json"
 
 
 embedding_model = SentenceTransformer(
@@ -38,18 +45,39 @@ def chunk_text(
     overlap: int = 50
 ) -> list[str]:
 
-    chunks = []
+    if chunk_size <= 0:
+        raise ValueError(
+            "chunk_size must be greater than 0"
+        )
 
+    if overlap < 0:
+        raise ValueError(
+            "overlap cannot be negative"
+        )
+
+    if overlap >= chunk_size:
+        raise ValueError(
+            "overlap must be smaller than chunk_size"
+        )
+
+    chunks = []
     start = 0
 
     while start < len(text):
         end = start + chunk_size
 
-        chunk = text[start:end]
+        chunk = text[
+            start:end
+        ].strip()
 
-        chunks.append(chunk)
+        if chunk:
+            chunks.append(
+                chunk
+            )
 
-        start += chunk_size - overlap
+        start += (
+            chunk_size - overlap
+        )
 
     return chunks
 
@@ -58,17 +86,24 @@ def embed_text(
     text: str
 ) -> list[float]:
 
-    vector = embedding_model.encode(text)
+    vector = embedding_model.encode(
+        text
+    )
 
     return vector.tolist()
 
 
 def add_document(
     text: str,
-    source: str
+    source: str,
+    book_id: int | str = 0,
+    title: str = "",
+    author: str = ""
 ) -> None:
 
-    chunks = chunk_text(text)
+    chunks = chunk_text(
+        text
+    )
 
     embeddings = [
         embed_text(chunk)
@@ -76,19 +111,26 @@ def add_document(
     ]
 
     ids = [
-        f"{source}-{index}"
-        for index in range(len(chunks))
+        f"book-{book_id}-chunk-{index}"
+        for index in range(
+            len(chunks)
+        )
     ]
 
     metadatas = [
         {
             "source": source,
+            "book_id": str(book_id),
+            "title": title,
+            "author": author,
             "chunk": index
         }
-        for index in range(len(chunks))
+        for index in range(
+            len(chunks)
+        )
     ]
 
-    collection.add(
+    collection.upsert(
         documents=chunks,
         embeddings=embeddings,
         metadatas=metadatas,
@@ -96,45 +138,70 @@ def add_document(
     )
 
 
-def load_demo_documents() -> None:
+def load_corpus() -> list[dict]:
 
-    if collection.count() > 0:
-        return
-
-    documents = [
-        (
-            """
-            The Aurora Library contains a science fiction collection
-            focused on space exploration, robotics, and future technology.
-            One popular book follows a crew travelling through a wormhole
-            to find a new home for humanity.
-            """,
-            "science_fiction.txt"
-        ),
-
-        (
-            """
-            The library's fantasy collection includes stories about
-            magic, dragons, ancient kingdoms, and young heroes.
-            One story follows a young wizard studying at a magical school.
-            """,
-            "fantasy.txt"
-        ),
-
-        (
-            """
-            The technology section contains books about Python,
-            software engineering, web development, databases,
-            and artificial intelligence.
-            """,
-            "technology.txt"
+    if not CORPUS_FILE.exists():
+        raise FileNotFoundError(
+            f"Corpus file not found: {CORPUS_FILE}"
         )
-    ]
 
-    for text, source in documents:
+    content = CORPUS_FILE.read_text(
+        encoding="utf-8"
+    )
+
+    corpus = json.loads(
+        content
+    )
+
+    if not isinstance(
+        corpus,
+        list
+    ):
+        raise ValueError(
+            "library_corpus.json must contain a list."
+        )
+
+    return corpus
+
+
+def load_library_documents() -> None:
+
+    corpus = load_corpus()
+
+    for book in corpus:
+        book_id = (
+            book.get("book_id")
+            or 0
+        )
+
+        title = str(
+            book.get("title")
+            or "Untitled"
+        )
+
+        author = str(
+            book.get("author")
+            or "Unknown Author"
+        )
+
+        text = str(
+            book.get("text")
+            or ""
+        ).strip()
+
+        if not text:
+            continue
+
+        source = (
+            f"book_{book_id}.json"
+        )
+
         add_document(
-            text,
-            source
+            text=text,
+            source=source,
+            book_id=book_id,
+            title=title,
+            author=author
         )
 
 
@@ -143,30 +210,41 @@ def retrieve(
     k: int = 3
 ):
 
+    if collection.count() == 0:
+        return [], []
+
     query_embedding = embed_text(
         question
+    )
+
+    number_of_results = min(
+        k,
+        collection.count()
     )
 
     results = collection.query(
         query_embeddings=[
             query_embedding
         ],
-        n_results=k
+        n_results=number_of_results
     )
 
     documents = (
         results["documents"][0]
-        if results["documents"]
+        if results.get("documents")
         else []
     )
 
     metadatas = (
         results["metadatas"][0]
-        if results["metadatas"]
+        if results.get("metadatas")
         else []
     )
 
-    return documents, metadatas
+    return (
+        documents,
+        metadatas
+    )
 
 
 def build_prompt(
@@ -179,15 +257,19 @@ def build_prompt(
     )
 
     return f"""
-Answer the question using ONLY the context below.
+You are a library assistant.
 
-If the answer is not contained in the context, say:
+Answer the question using ONLY the library context below.
+
+If the answer is not contained in the context, respond exactly with:
 
 "I don't have that information."
 
 Do not use outside knowledge.
+Do not guess.
+Keep the answer clear and concise.
 
-Context:
+Library context:
 
 {context}
 
@@ -202,25 +284,21 @@ async def generate_answer(
 ) -> str:
 
     if not OPENROUTER_API_KEY:
-        return (
+        raise ValueError(
             "OPENROUTER_API_KEY is missing."
         )
 
     headers = {
         "Authorization":
             f"Bearer {OPENROUTER_API_KEY}",
-
         "Content-Type":
             "application/json"
     }
 
     payload = {
         "model": MODEL_NAME,
-
         "temperature": 0.2,
-
         "max_tokens": 300,
-
         "messages": [
             {
                 "role": "user",
@@ -230,7 +308,7 @@ async def generate_answer(
     }
 
     async with httpx.AsyncClient(
-        timeout=30
+        timeout=30.0
     ) as client:
 
         response = await client.post(
@@ -243,10 +321,21 @@ async def generate_answer(
 
     data = response.json()
 
-    return (
-        data["choices"][0]
-        ["message"]["content"]
-    )
+    try:
+        return (
+            data["choices"][0]
+            ["message"]["content"]
+            .strip()
+        )
+
+    except (
+        KeyError,
+        IndexError,
+        TypeError
+    ):
+        raise ValueError(
+            "LLM provider returned an unexpected response structure."
+        )
 
 
-load_demo_documents()
+load_library_documents()
