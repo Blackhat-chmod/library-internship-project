@@ -1,0 +1,38 @@
+[
+  {
+    "book_id": 5,
+    "title": "Advanced C#",
+    "author": "Hajra Ali",
+    "categories": [
+      "Uncategorized"
+    ],
+    "text": "Title: Advanced C#\nAuthor: Hajra Ali\nCategories: Uncategorized\nDescription: Advanced C# is a library book written by Hajra Ali. It belongs to the following category or categories: Uncategorized."
+  },
+  {
+    "book_id": 8,
+    "title": "Persistent Library Book",
+    "author": "Hajra Ali",
+    "categories": [
+      "Uncategorized"
+    ],
+    "text": "Title: Persistent Library Book\nAuthor: Hajra Ali\nCategories: Uncategorized\nDescription: Persistent Library Book is a library book written by Hajra Ali. It belongs to the following category or categories: Uncategorized."
+  },
+  {
+    "book_id": 9,
+    "title": "Angular API Book",
+    "author": "Hajra Ali",
+    "categories": [
+      "Uncategorized"
+    ],
+    "text": "Title: Angular API Book\nAuthor: Hajra Ali\nCategories: Uncategorized\nDescription: Angular API Book is a library book written by Hajra Ali. It belongs to the following category or categories: Uncategorized."
+  },
+  {
+    "book_id": 11,
+    "title": "Angular Auth Test",
+    "author": "Hajra Ali",
+    "categories": [
+      "Uncategorized"
+    ],
+    "text": "Title: Angular Auth Test\nAuthor: Hajra Ali\nCategories: Uncategorized\nDescription: Angular Auth Test is a library book written by Hajra Ali. It belongs to the following category or categories: Uncategorized."
+  }
+]
