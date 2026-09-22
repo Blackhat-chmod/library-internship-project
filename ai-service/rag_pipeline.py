@@ -34,7 +34,7 @@ MODEL_NAME = "openai/gpt-4o-mini"
 
 def chunk_text(
     text: str,
-    chunk_size: int = 0,
+    chunk_size: int = 500,
     overlap: int = 50
 ) -> list[str]:
 
