@@ -1,6 +1,13 @@
-from fastapi import FastAPI
+import json
+import os
+
+import httpx
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+
+load_dotenv()
 
 app = FastAPI(
     title="Library AI Service",
@@ -9,16 +16,36 @@ app = FastAPI(
 )
 
 
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+MODEL_NAME = "openai/gpt-4o-mini"
+
+
 class SummaryRequest(BaseModel):
     text: str = Field(
         min_length=10,
         description="Text that should be summarized"
     )
 
+    temperature: float = Field(
+        default=0.3,
+        ge=0.0,
+        le=2.0
+    )
+
+    max_tokens: int = Field(
+        default=150,
+        ge=20,
+        le=500
+    )
+
 
 class SummaryResponse(BaseModel):
-    original_length: int
     summary: str
+    key_points: list[str]
+    model: str
 
 
 class GenreRequest(BaseModel):
@@ -36,6 +63,49 @@ class GenreRequest(BaseModel):
 class GenreResponse(BaseModel):
     title: str
     suggested_genre: str
+
+
+def parse_llm_response(content: str) -> dict:
+    try:
+        parsed = json.loads(content)
+
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "LLM returned malformed JSON.",
+                "raw_response": content
+            }
+        )
+
+    summary = parsed.get("summary")
+    key_points = parsed.get("key_points")
+
+    if not isinstance(summary, str):
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "LLM response is missing a valid summary.",
+                "raw_response": content
+            }
+        )
+
+    if not isinstance(key_points, list):
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "LLM response is missing valid key_points.",
+                "raw_response": content
+            }
+        )
+
+    return {
+        "summary": summary,
+        "key_points": [
+            str(point)
+            for point in key_points
+        ]
+    }
 
 
 @app.get("/")
@@ -57,23 +127,127 @@ def health_check():
     "/summarize",
     response_model=SummaryResponse
 )
-def summarize_text(request: SummaryRequest):
-    text = request.text.strip()
+async def summarize_text(
+    request: SummaryRequest
+):
+    if not OPENROUTER_API_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="OPENROUTER_API_KEY is missing."
+        )
 
-    sentences = [
-        sentence.strip()
-        for sentence in text.replace("!", ".").replace("?", ".").split(".")
-        if sentence.strip()
-    ]
+    system_prompt = """
+You are a helpful library assistant.
 
-    if len(sentences) <= 2:
-        summary = text
-    else:
-        summary = ". ".join(sentences[:2]) + "."
+Summarize the user's text clearly and accurately.
 
-    return SummaryResponse(
-        original_length=len(text),
-        summary=summary
+Return ONLY valid JSON in this exact format:
+
+{
+  "summary": "short summary",
+  "key_points": [
+    "point 1",
+    "point 2"
+  ]
+}
+
+Do not include markdown.
+Do not include explanations outside the JSON.
+"""
+
+    user_prompt = f"""
+Summarize the following text:
+
+{request.text}
+"""
+
+    payload = {
+        "model": MODEL_NAME,
+        "temperature": request.temperature,
+        "max_tokens": request.max_tokens,
+        "messages": [
+            {
+                "role": "system",
+                "content": system_prompt
+            },
+            {
+                "role": "user",
+                "content": user_prompt
+            }
+        ]
+    }
+
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        async with httpx.AsyncClient(
+            timeout=30.0
+        ) as client:
+            response = await client.post(
+                OPENROUTER_URL,
+                headers=headers,
+                json=payload
+            )
+
+        if response.status_code != 200:
+            raise HTTPException(
+                status_code=502,
+                detail={
+                    "message": "LLM request failed.",
+                    "provider_status": response.status_code
+                }
+            )
+
+        data = response.json()
+
+        try:
+            content = (
+                data["choices"][0]["message"]["content"]
+            )
+
+        except (
+            KeyError,
+            IndexError,
+            TypeError
+        ):
+            raise HTTPException(
+                status_code=502,
+                detail={
+                    "message": "LLM provider returned an unexpected response structure."
+                }
+            )
+
+        parsed = parse_llm_response(content)
+
+        return SummaryResponse(
+            summary=parsed["summary"],
+            key_points=parsed["key_points"],
+            model=MODEL_NAME
+        )
+
+    except httpx.RequestError as error:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Could not reach LLM provider: {error}"
+        )
+
+
+@app.get("/test-malformed-response")
+def test_malformed_response():
+    fake_llm_response = """
+This is not valid JSON.
+
+Summary: FastAPI is useful.
+Key points:
+- Validation
+- Documentation
+"""
+
+    return parse_llm_response(
+        fake_llm_response
     )
 
 
@@ -81,9 +255,13 @@ def summarize_text(request: SummaryRequest):
     "/genre",
     response_model=GenreResponse
 )
-def suggest_genre(request: GenreRequest):
+def suggest_genre(
+    request: GenreRequest
+):
     content = (
-        request.title + " " + request.description
+        request.title +
+        " " +
+        request.description
     ).lower()
 
     if any(
