@@ -1,1 +1,1 @@
-Conflict practice version B
+Conflict practice resolved using versions A and B
