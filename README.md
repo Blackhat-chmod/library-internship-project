@@ -1,67 +1,86 @@
 # Library Internship Project
 
-This repository contains the Library Management project developed during the AI Software Development Internship.
+This repository contains the Library Management project developed during the internship.
 
-The project began in Week 2 with an ASP.NET Core Web API and Angular frontend.
+The project includes:
 
-In Week 3, the project was extended with SQL Server, Entity Framework Core, database-backed CRUD operations, Angular API integration, Git/GitHub workflow, a basic login foundation, and a standalone Python AI script.
-
----
-
-## Tech Stack
-
-### Backend
-
-- C#
-- ASP.NET Core Web API
-- Entity Framework Core
-- SQL Server
-- Swagger
-
-### Frontend
-
-- Angular
-- TypeScript
-- Reactive Forms
-- Angular Router
-- HttpClient
-
-### AI Track
-
-- Python
-- Groq API
+- ASP.NET Core Web API backend
+- Angular frontend
+- SQL Server database
+- JWT authentication and authorization
+- FastAPI AI service
 - LLM integration
-
-### Development Tools
-
-- Visual Studio
-- Visual Studio Code
-- SQL Server Management Studio
-- Git
-- GitHub
-- Swagger
-- Postman
+- Git feature branch and pull request workflow
 
 ---
 
-## Project Structure
+# Backend
+
+The backend is built using ASP.NET Core Web API.
+
+Main backend features include:
+
+- Book management
+- User registration
+- User login
+- Password hashing
+- JWT authentication
+- Role-based authorization
+- SQL Server integration
+- Swagger API documentation
+
+## Authentication
+
+Users can register and log in through the authentication API.
+
+After successful login, the API generates a JWT token containing user information and role claims.
+
+Protected endpoints require a valid JWT token.
+
+### Authorization Rules
+
+- GET book endpoints are public
+- POST book endpoint requires authentication
+- PUT book endpoint requires authentication
+- DELETE book endpoint requires the Admin role
+
+Normal users receive `403 Forbidden` when attempting Admin-only operations.
+
+---
+
+# Angular Frontend
+
+The Angular frontend provides the user interface for the Library Management system.
+
+Features include:
+
+- Book list
+- Add book form
+- Login page
+- JWT authentication
+- AuthService
+- HTTP authentication interceptor
+- Route guard
+- Logout functionality
+- Role-based interface controls
+
+The JWT token is stored in `localStorage`.
+
+The HTTP interceptor automatically attaches the JWT token to authenticated API requests.
+
+The route guard prevents unauthenticated users from opening protected routes.
+
+## Role-Based UI
+
+Admin users can see Delete controls.
+
+Normal users cannot see Delete controls.
+
+---
+
+# FastAPI AI Service
+
+The Week 4 AI service is located in:
 
 ```text
-library-internship-project/
-│
-├── backend/
-│   └── LibraryApi/
-│
-├── frontend/
-│   └── library-angular/
-│
-├── sql/
-│   └── week3-relational-schema.sql
-│
-├── docs/
-│   └── week3-auth-notes.md
-│
-├── ai-scripts/
-│   └── book_summary.py
-│
-└── README.md
+ai-service/
