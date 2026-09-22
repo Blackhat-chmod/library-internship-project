@@ -1,9 +1,33 @@
 <h1>Library Management</h1>
 
 <nav>
-  <a routerLink="/">Book List</a>
-  |
-  <a routerLink="/add-book">Add Book</a>
+  <a routerLink="/">
+    Book List
+  </a>
+
+  @if (authService.isLoggedIn()) {
+    |
+    <a routerLink="/add-book">
+      Add Book
+    </a>
+
+    |
+
+    <span>
+      Role: {{ authService.getRole() }}
+    </span>
+
+    |
+
+    <button (click)="logout()">
+      Logout
+    </button>
+  } @else {
+    |
+    <a routerLink="/login">
+      Login
+    </a>
+  }
 </nav>
 
 <hr>
