@@ -96,6 +96,48 @@ def add_document(
     )
 
 
+def load_demo_documents() -> None:
+
+    if collection.count() > 0:
+        return
+
+    documents = [
+        (
+            """
+            The Aurora Library contains a science fiction collection
+            focused on space exploration, robotics, and future technology.
+            One popular book follows a crew travelling through a wormhole
+            to find a new home for humanity.
+            """,
+            "science_fiction.txt"
+        ),
+
+        (
+            """
+            The library's fantasy collection includes stories about
+            magic, dragons, ancient kingdoms, and young heroes.
+            One story follows a young wizard studying at a magical school.
+            """,
+            "fantasy.txt"
+        ),
+
+        (
+            """
+            The technology section contains books about Python,
+            software engineering, web development, databases,
+            and artificial intelligence.
+            """,
+            "technology.txt"
+        )
+    ]
+
+    for text, source in documents:
+        add_document(
+            text,
+            source
+        )
+
+
 def retrieve(
     question: str,
     k: int = 3
@@ -205,3 +247,6 @@ async def generate_answer(
         data["choices"][0]
         ["message"]["content"]
     )
+
+
+load_demo_documents()

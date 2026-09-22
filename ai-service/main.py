@@ -6,13 +6,19 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from rag_pipeline import (
+    retrieve,
+    build_prompt,
+    generate_answer
+)
+
 
 load_dotenv()
 
 app = FastAPI(
     title="Library AI Service",
-    description="Week 4 FastAPI service for the Library Internship Project",
-    version="1.0.0"
+    description="FastAPI AI service for the Library Internship Project",
+    version="1.1.0"
 )
 
 
@@ -63,6 +69,18 @@ class GenreRequest(BaseModel):
 class GenreResponse(BaseModel):
     title: str
     suggested_genre: str
+
+
+class AskRequest(BaseModel):
+    question: str = Field(
+        min_length=3,
+        description="Question to ask the library knowledge assistant"
+    )
+
+
+class AskResponse(BaseModel):
+    answer: str
+    sources: list[str]
 
 
 def parse_llm_response(content: str) -> dict:
@@ -232,6 +250,76 @@ Summarize the following text:
         raise HTTPException(
             status_code=503,
             detail=f"Could not reach LLM provider: {error}"
+        )
+
+
+@app.post(
+    "/ask",
+    response_model=AskResponse
+)
+async def ask_question(
+    request: AskRequest
+):
+    try:
+        chunks, metadatas = retrieve(
+            request.question
+        )
+
+        if not chunks:
+            return AskResponse(
+                answer="I don't have that information.",
+                sources=[]
+            )
+
+        prompt = build_prompt(
+            request.question,
+            chunks
+        )
+
+        answer = await generate_answer(
+            prompt
+        )
+
+        clean_answer = answer.strip()
+
+        if (
+            "i don't have that information"
+            in clean_answer.lower()
+        ):
+            return AskResponse(
+                answer="I don't have that information.",
+                sources=[]
+            )
+
+        sources = sorted(
+            {
+                metadata["source"]
+                for metadata in metadatas
+                if "source" in metadata
+            }
+        )
+
+        return AskResponse(
+            answer=clean_answer,
+            sources=sources
+        )
+
+    except httpx.RequestError as error:
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "message": "Could not reach the LLM provider.",
+                "error": str(error)
+            }
+        )
+
+    except Exception as error:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "message": "The RAG request could not be completed.",
+                "error": str(error)
+            }
         )
 
 
