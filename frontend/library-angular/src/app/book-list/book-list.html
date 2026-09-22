@@ -15,25 +15,54 @@
       <th>Title</th>
       <th>Author</th>
       <th>Category</th>
+
+      @if (authService.isAdmin()) {
+        <th>Actions</th>
+      }
     </tr>
   </thead>
 
   <tbody>
+
     @for (book of books; track book.bookId) {
       <tr>
         <td>{{ book.bookId }}</td>
+
         <td>{{ book.title }}</td>
-        <td>{{ book.authorEntity?.fullName || 'N/A' }}</td>
+
         <td>
-          @if (book.categories && book.categories.length > 0) {
-            @for (category of book.categories; track category.categoryId) {
+          {{ book.authorEntity?.fullName || 'N/A' }}
+        </td>
+
+        <td>
+          @if (
+            book.categories &&
+            book.categories.length > 0
+          ) {
+
+            @for (
+              category of book.categories;
+              track category.categoryId
+            ) {
               {{ category.categoryName }}
             }
+
           } @else {
             N/A
           }
         </td>
+
+        @if (authService.isAdmin()) {
+          <td>
+            <button
+              (click)="deleteBook(book.bookId)"
+            >
+              Delete
+            </button>
+          </td>
+        }
       </tr>
     }
+
   </tbody>
 </table>

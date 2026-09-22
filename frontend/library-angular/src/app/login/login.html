@@ -1,0 +1,58 @@
+<div class="login-container">
+  <div class="login-card">
+    <h2>Library Login</h2>
+
+    <form [formGroup]="loginForm" (ngSubmit)="login()">
+
+      <div class="field">
+        <label>Email</label>
+
+        <input
+          type="email"
+          formControlName="email"
+          placeholder="Enter your email"
+        >
+
+        @if (
+          loginForm.get('email')?.touched &&
+          loginForm.get('email')?.invalid
+        ) {
+          <span class="validation">
+            Enter a valid email.
+          </span>
+        }
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+
+        <input
+          type="password"
+          formControlName="password"
+          placeholder="Enter your password"
+        >
+
+        @if (
+          loginForm.get('password')?.touched &&
+          loginForm.get('password')?.invalid
+        ) {
+          <span class="validation">
+            Password is required.
+          </span>
+        }
+      </div>
+
+      <button
+        type="submit"
+        [disabled]="loading"
+      >
+        {{ loading ? 'Logging in...' : 'Login' }}
+      </button>
+
+    </form>
+
+    @if (errorMessage) {
+      <p class="error">{{ errorMessage }}</p>
+    }
+  </div>
+</div>

@@ -7,7 +7,8 @@ import { Book } from '../book';
   providedIn: 'root'
 })
 export class BookService {
-  private apiUrl = 'https://localhost:7272/api/Books';
+  private readonly apiUrl =
+    'https://localhost:7272/api/Books';
 
   constructor(private http: HttpClient) {}
 
@@ -16,18 +17,31 @@ export class BookService {
   }
 
   getBookById(id: number): Observable<Book> {
-    return this.http.get<Book>(`${this.apiUrl}/${id}`);
+    return this.http.get<Book>(
+      `${this.apiUrl}/${id}`
+    );
   }
 
   addBook(book: Book): Observable<Book> {
-    return this.http.post<Book>(this.apiUrl, book);
+    return this.http.post<Book>(
+      this.apiUrl,
+      book
+    );
   }
 
-  updateBook(id: number, book: Book): Observable<any> {
-    return this.http.put(`${this.apiUrl}/${id}`, book);
+  updateBook(
+    id: number,
+    book: Book
+  ): Observable<unknown> {
+    return this.http.put(
+      `${this.apiUrl}/${id}`,
+      book
+    );
   }
 
-  deleteBook(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${id}`);
+  deleteBook(id: number): Observable<unknown> {
+    return this.http.delete(
+      `${this.apiUrl}/${id}`
+    );
   }
 }
