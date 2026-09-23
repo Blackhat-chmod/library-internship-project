@@ -18,7 +18,7 @@ load_dotenv()
 app = FastAPI(
     title="Library AI Service",
     description="FastAPI AI service for the Library Internship Project",
-    version="1.1.0"
+    version="1.2.0"
 )
 
 
@@ -126,6 +126,38 @@ def parse_llm_response(content: str) -> dict:
     }
 
 
+def build_source_labels(
+    metadatas: list[dict]
+) -> list[str]:
+
+    sources = []
+
+    for metadata in metadatas:
+        source = metadata.get(
+            "source",
+            "unknown-source"
+        )
+
+        title = metadata.get(
+            "title",
+            "Unknown Title"
+        )
+
+        author = metadata.get(
+            "author",
+            "Unknown Author"
+        )
+
+        label = (
+            f"{title} — {author} ({source})"
+        )
+
+        if label not in sources:
+            sources.append(label)
+
+    return sources
+
+
 @app.get("/")
 def root():
     return {
@@ -137,7 +169,8 @@ def root():
 def health_check():
     return {
         "status": "healthy",
-        "service": "library-ai-service"
+        "service": "library-ai-service",
+        "version": "1.2.0"
     }
 
 
@@ -260,9 +293,18 @@ Summarize the following text:
 async def ask_question(
     request: AskRequest
 ):
+    question = request.question.strip()
+
+    if not question:
+        raise HTTPException(
+            status_code=400,
+            detail="Question cannot be empty."
+        )
+
     try:
         chunks, metadatas = retrieve(
-            request.question
+            question,
+            k=3
         )
 
         if not chunks:
@@ -272,7 +314,7 @@ async def ask_question(
             )
 
         prompt = build_prompt(
-            request.question,
+            question,
             chunks
         )
 
@@ -291,12 +333,8 @@ async def ask_question(
                 sources=[]
             )
 
-        sources = sorted(
-            {
-                metadata["source"]
-                for metadata in metadatas
-                if "source" in metadata
-            }
+        sources = build_source_labels(
+            metadatas
         )
 
         return AskResponse(
@@ -310,6 +348,15 @@ async def ask_question(
             detail={
                 "message": "Could not reach the LLM provider.",
                 "error": str(error)
+            }
+        )
+
+    except httpx.HTTPStatusError as error:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "message": "LLM provider returned an error.",
+                "provider_status": error.response.status_code
             }
         )
 
