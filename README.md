@@ -10,6 +10,9 @@ The project includes:
 - JWT authentication and authorization
 - FastAPI AI service
 - LLM integration
+- Embeddings and semantic search
+- Chroma vector database
+- Manual Retrieval-Augmented Generation (RAG)
 - Git feature branch and pull request workflow
 
 ---
@@ -80,7 +83,7 @@ Normal users cannot see Delete controls.
 
 # FastAPI AI Service
 
-The Week 4 AI service is located in:
+The AI service is located in:
 
 ```text
 ai-service/
