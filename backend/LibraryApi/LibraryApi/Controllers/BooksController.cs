@@ -37,6 +37,31 @@ namespace LibraryApi.Controllers
             return Ok(book);
         }
 
+        [HttpGet("{id}/availability")]
+        public async Task<IActionResult> GetBookAvailability(int id)
+        {
+            var book = await bookService.GetBookByIdAsync(id);
+
+            if (book == null)
+            {
+                return NotFound(
+                    new
+                    {
+                        message = "Book not found."
+                    }
+                );
+            }
+
+            return Ok(
+                new
+                {
+                    bookId = book.BookId,
+                    title = book.Title,
+                    isAvailable = book.IsAvailable
+                }
+            );
+        }
+
         [Authorize]
         [HttpPost]
         public async Task<IActionResult> AddBook(Book book)
