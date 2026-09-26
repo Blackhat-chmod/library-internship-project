@@ -91,10 +91,13 @@ builder.Services
         client =>
         {
             string baseUrl =
-                builder.Configuration["AiService:BaseUrl"]
+                builder.Configuration[
+                    "AiService:BaseUrl"
+                ]
                 ?? "http://127.0.0.1:8000/";
 
-            client.BaseAddress = new Uri(baseUrl);
+            client.BaseAddress =
+                new Uri(baseUrl);
 
             client.Timeout =
                 TimeSpan.FromSeconds(25);
@@ -148,6 +151,24 @@ builder.Services
                 }
             )
     );
+
+builder.Services.AddHttpClient(
+    "AiStreamingClient",
+    client =>
+    {
+        string baseUrl =
+            builder.Configuration[
+                "AiService:BaseUrl"
+            ]
+            ?? "http://127.0.0.1:8000/";
+
+        client.BaseAddress =
+            new Uri(baseUrl);
+
+        client.Timeout =
+            Timeout.InfiniteTimeSpan;
+    }
+);
 
 builder.Services.AddCors(options =>
 {

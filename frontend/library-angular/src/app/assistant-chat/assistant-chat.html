@@ -1,0 +1,92 @@
+<div class="assistant-page">
+  <div class="assistant-card">
+    <div class="header">
+      <div>
+        <h2>Library AI Assistant</h2>
+        <p>
+          Ask a question and watch the answer stream live.
+        </p>
+      </div>
+
+      @if (isStreaming) {
+        <span class="streaming-badge">
+          Streaming...
+        </span>
+      }
+    </div>
+
+    <div class="question-section">
+      <label for="question">
+        Your question
+      </label>
+
+      <textarea
+        id="question"
+        [(ngModel)]="question"
+        rows="4"
+        placeholder="Example: Tell me about Advanced C#"
+        [disabled]="isStreaming"
+      ></textarea>
+    </div>
+
+    <div class="actions">
+      <button
+        class="ask-button"
+        type="button"
+        (click)="ask()"
+        [disabled]="isStreaming"
+      >
+        {{ isStreaming ? 'Generating...' : 'Ask AI' }}
+      </button>
+
+      @if (isStreaming) {
+        <button
+          class="stop-button"
+          type="button"
+          (click)="stop()"
+        >
+          Stop
+        </button>
+      }
+
+      <button
+        class="clear-button"
+        type="button"
+        (click)="clear()"
+      >
+        Clear
+      </button>
+    </div>
+
+    @if (answer) {
+      <div class="answer-section">
+        <h3>Answer</h3>
+
+        <div class="answer-box">
+          {{ answer }}
+          @if (isStreaming) {
+            <span class="cursor"></span>
+          }
+        </div>
+      </div>
+    }
+
+    @if (sources.length > 0) {
+      <div class="sources-section">
+        <h3>Sources</h3>
+
+        <ul>
+          @for (source of sources; track source) {
+            <li>{{ source }}</li>
+          }
+        </ul>
+      </div>
+    }
+
+    @if (errorMessage) {
+      <div class="error-box">
+        {{ errorMessage }}
+      </div>
+    }
+  </div>
+</div>
