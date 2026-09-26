@@ -1,9 +1,15 @@
+import asyncio
 import json
 import os
 
 import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    Request
+)
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from rag_pipeline import (
@@ -12,27 +18,45 @@ from rag_pipeline import (
     generate_answer
 )
 
-
-load_dotenv()
-
-app = FastAPI(
-    title="Library AI Service",
-    description="FastAPI AI service for the Library Internship Project",
-    version="1.2.0"
+from streaming_rag import (
+    generate_answer_stream
 )
 
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+load_dotenv()
 
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-MODEL_NAME = "openai/gpt-4o-mini"
+app = FastAPI(
+    title="Library AI Service",
+    description=(
+        "FastAPI AI service for the "
+        "Library Internship Project"
+    ),
+    version="1.3.0"
+)
+
+
+OPENROUTER_API_KEY = os.getenv(
+    "OPENROUTER_API_KEY"
+)
+
+OPENROUTER_URL = (
+    "https://openrouter.ai/api/v1/"
+    "chat/completions"
+)
+
+MODEL_NAME = os.getenv(
+    "OPENROUTER_MODEL",
+    "openrouter/free"
+)
 
 
 class SummaryRequest(BaseModel):
     text: str = Field(
         min_length=10,
-        description="Text that should be summarized"
+        description=(
+            "Text that should be summarized"
+        )
     )
 
     temperature: float = Field(
@@ -62,7 +86,9 @@ class GenreRequest(BaseModel):
 
     description: str = Field(
         min_length=5,
-        description="Short description of the book"
+        description=(
+            "Short description of the book"
+        )
     )
 
 
@@ -74,7 +100,20 @@ class GenreResponse(BaseModel):
 class AskRequest(BaseModel):
     question: str = Field(
         min_length=3,
-        description="Question to ask the library knowledge assistant"
+        description=(
+            "Question to ask the library "
+            "knowledge assistant"
+        )
+    )
+
+    delay_ms: int = Field(
+        default=0,
+        ge=0,
+        le=2000,
+        description=(
+            "Optional artificial delay "
+            "between streamed chunks"
+        )
     )
 
 
@@ -83,37 +122,61 @@ class AskResponse(BaseModel):
     sources: list[str]
 
 
-def parse_llm_response(content: str) -> dict:
+def parse_llm_response(
+    content: str
+) -> dict:
+
     try:
-        parsed = json.loads(content)
+        parsed = json.loads(
+            content
+        )
 
     except json.JSONDecodeError:
         raise HTTPException(
             status_code=502,
             detail={
-                "message": "LLM returned malformed JSON.",
-                "raw_response": content
+                "message":
+                    "LLM returned malformed JSON.",
+                "raw_response":
+                    content
             }
         )
 
-    summary = parsed.get("summary")
-    key_points = parsed.get("key_points")
+    summary = parsed.get(
+        "summary"
+    )
 
-    if not isinstance(summary, str):
+    key_points = parsed.get(
+        "key_points"
+    )
+
+    if not isinstance(
+        summary,
+        str
+    ):
         raise HTTPException(
             status_code=502,
             detail={
-                "message": "LLM response is missing a valid summary.",
-                "raw_response": content
+                "message":
+                    "LLM response is missing "
+                    "a valid summary.",
+                "raw_response":
+                    content
             }
         )
 
-    if not isinstance(key_points, list):
+    if not isinstance(
+        key_points,
+        list
+    ):
         raise HTTPException(
             status_code=502,
             detail={
-                "message": "LLM response is missing valid key_points.",
-                "raw_response": content
+                "message":
+                    "LLM response is missing "
+                    "valid key_points.",
+                "raw_response":
+                    content
             }
         )
 
@@ -133,6 +196,7 @@ def build_source_labels(
     sources = []
 
     for metadata in metadatas:
+
         source = metadata.get(
             "source",
             "unknown-source"
@@ -149,19 +213,52 @@ def build_source_labels(
         )
 
         label = (
-            f"{title} — {author} ({source})"
+            f"{title} - "
+            f"{author} "
+            f"({source})"
         )
 
         if label not in sources:
-            sources.append(label)
+            sources.append(
+                label
+            )
 
     return sources
+
+
+def create_sse_event(
+    event_type: str,
+    value
+) -> str:
+
+    payload = {
+        "type": event_type
+    }
+
+    if event_type == "token":
+        payload["content"] = value
+
+    elif event_type == "sources":
+        payload["sources"] = value
+
+    elif event_type == "error":
+        payload["message"] = value
+
+    elif event_type == "done":
+        payload["completed"] = value
+
+    return (
+        "data: "
+        + json.dumps(payload)
+        + "\n\n"
+    )
 
 
 @app.get("/")
 def root():
     return {
-        "message": "Library AI Service is running."
+        "message":
+            "Library AI Service is running."
     }
 
 
@@ -169,8 +266,9 @@ def root():
 def health_check():
     return {
         "status": "healthy",
-        "service": "library-ai-service",
-        "version": "1.2.0"
+        "service":
+            "library-ai-service",
+        "version": "1.3.0"
     }
 
 
@@ -184,15 +282,20 @@ async def summarize_text(
     if not OPENROUTER_API_KEY:
         raise HTTPException(
             status_code=500,
-            detail="OPENROUTER_API_KEY is missing."
+            detail=(
+                "OPENROUTER_API_KEY "
+                "is missing."
+            )
         )
 
     system_prompt = """
 You are a helpful library assistant.
 
-Summarize the user's text clearly and accurately.
+Summarize the user's text clearly
+and accurately.
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON in this
+exact format:
 
 {
   "summary": "short summary",
@@ -203,7 +306,8 @@ Return ONLY valid JSON in this exact format:
 }
 
 Do not include markdown.
-Do not include explanations outside the JSON.
+Do not include explanations outside
+the JSON.
 """
 
     user_prompt = f"""
@@ -214,29 +318,36 @@ Summarize the following text:
 
     payload = {
         "model": MODEL_NAME,
-        "temperature": request.temperature,
-        "max_tokens": request.max_tokens,
+        "temperature":
+            request.temperature,
+        "max_tokens":
+            request.max_tokens,
         "messages": [
             {
                 "role": "system",
-                "content": system_prompt
+                "content":
+                    system_prompt
             },
             {
                 "role": "user",
-                "content": user_prompt
+                "content":
+                    user_prompt
             }
         ]
     }
 
     headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
+        "Authorization":
+            f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type":
+            "application/json"
     }
 
     try:
         async with httpx.AsyncClient(
             timeout=30.0
         ) as client:
+
             response = await client.post(
                 OPENROUTER_URL,
                 headers=headers,
@@ -247,8 +358,10 @@ Summarize the following text:
             raise HTTPException(
                 status_code=502,
                 detail={
-                    "message": "LLM request failed.",
-                    "provider_status": response.status_code
+                    "message":
+                        "LLM request failed.",
+                    "provider_status":
+                        response.status_code
                 }
             )
 
@@ -256,7 +369,8 @@ Summarize the following text:
 
         try:
             content = (
-                data["choices"][0]["message"]["content"]
+                data["choices"][0]
+                ["message"]["content"]
             )
 
         except (
@@ -267,22 +381,32 @@ Summarize the following text:
             raise HTTPException(
                 status_code=502,
                 detail={
-                    "message": "LLM provider returned an unexpected response structure."
+                    "message":
+                        "LLM provider returned "
+                        "an unexpected response "
+                        "structure."
                 }
             )
 
-        parsed = parse_llm_response(content)
+        parsed = parse_llm_response(
+            content
+        )
 
         return SummaryResponse(
             summary=parsed["summary"],
-            key_points=parsed["key_points"],
+            key_points=(
+                parsed["key_points"]
+            ),
             model=MODEL_NAME
         )
 
     except httpx.RequestError as error:
         raise HTTPException(
             status_code=503,
-            detail=f"Could not reach LLM provider: {error}"
+            detail=(
+                "Could not reach LLM "
+                f"provider: {error}"
+            )
         )
 
 
@@ -293,12 +417,16 @@ Summarize the following text:
 async def ask_question(
     request: AskRequest
 ):
-    question = request.question.strip()
+    question = (
+        request.question.strip()
+    )
 
     if not question:
         raise HTTPException(
             status_code=400,
-            detail="Question cannot be empty."
+            detail=(
+                "Question cannot be empty."
+            )
         )
 
     try:
@@ -309,7 +437,10 @@ async def ask_question(
 
         if not chunks:
             return AskResponse(
-                answer="I don't have that information.",
+                answer=(
+                    "I don't have that "
+                    "information."
+                ),
                 sources=[]
             )
 
@@ -329,12 +460,17 @@ async def ask_question(
             in clean_answer.lower()
         ):
             return AskResponse(
-                answer="I don't have that information.",
+                answer=(
+                    "I don't have that "
+                    "information."
+                ),
                 sources=[]
             )
 
-        sources = build_source_labels(
-            metadatas
+        sources = (
+            build_source_labels(
+                metadatas
+            )
         )
 
         return AskResponse(
@@ -346,8 +482,11 @@ async def ask_question(
         raise HTTPException(
             status_code=503,
             detail={
-                "message": "Could not reach the LLM provider.",
-                "error": str(error)
+                "message":
+                    "Could not reach the "
+                    "LLM provider.",
+                "error":
+                    str(error)
             }
         )
 
@@ -355,8 +494,11 @@ async def ask_question(
         raise HTTPException(
             status_code=502,
             detail={
-                "message": "LLM provider returned an error.",
-                "provider_status": error.response.status_code
+                "message":
+                    "LLM provider returned "
+                    "an error.",
+                "provider_status":
+                    error.response.status_code
             }
         )
 
@@ -364,13 +506,166 @@ async def ask_question(
         raise HTTPException(
             status_code=500,
             detail={
-                "message": "The RAG request could not be completed.",
-                "error": str(error)
+                "message":
+                    "The RAG request could "
+                    "not be completed.",
+                "error":
+                    str(error)
             }
         )
 
 
-@app.get("/test-malformed-response")
+@app.post("/ask/stream")
+async def ask_question_stream(
+    body: AskRequest,
+    request: Request
+):
+    question = (
+        body.question.strip()
+    )
+
+    if not question:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Question cannot be empty."
+            )
+        )
+
+    chunks, metadatas = retrieve(
+        question,
+        k=3
+    )
+
+    async def stream_events():
+
+        try:
+            if not chunks:
+
+                yield create_sse_event(
+                    "token",
+                    (
+                        "I don't have that "
+                        "information."
+                    )
+                )
+
+                yield create_sse_event(
+                    "sources",
+                    []
+                )
+
+                yield create_sse_event(
+                    "done",
+                    True
+                )
+
+                return
+
+            prompt = build_prompt(
+                question,
+                chunks
+            )
+
+            sources = (
+                build_source_labels(
+                    metadatas
+                )
+            )
+
+            async for token in (
+                generate_answer_stream(
+                    prompt
+                )
+            ):
+
+                if await request.is_disconnected():
+                    print(
+                        "Streaming client "
+                        "disconnected."
+                    )
+                    return
+
+                yield create_sse_event(
+                    "token",
+                    token
+                )
+
+                if body.delay_ms > 0:
+                    await asyncio.sleep(
+                        body.delay_ms
+                        / 1000
+                    )
+
+            if await request.is_disconnected():
+                return
+
+            yield create_sse_event(
+                "sources",
+                sources
+            )
+
+            yield create_sse_event(
+                "done",
+                True
+            )
+
+        except asyncio.CancelledError:
+            print(
+                "Streaming request "
+                "was cancelled."
+            )
+
+            return
+
+        except httpx.HTTPStatusError as error:
+
+            status = (
+                error.response.status_code
+            )
+
+            yield create_sse_event(
+                "error",
+                (
+                    "LLM provider returned "
+                    f"HTTP {status}."
+                )
+            )
+
+        except httpx.RequestError as error:
+
+            yield create_sse_event(
+                "error",
+                (
+                    "Could not reach LLM "
+                    f"provider: {error}"
+                )
+            )
+
+        except Exception as error:
+
+            yield create_sse_event(
+                "error",
+                str(error)
+            )
+
+    return StreamingResponse(
+        stream_events(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control":
+                "no-cache",
+            "Connection":
+                "keep-alive",
+            "X-Accel-Buffering":
+                "no"
+        }
+    )
+
+
+@app.get(
+    "/test-malformed-response"
+)
 def test_malformed_response():
     fake_llm_response = """
 This is not valid JSON.
@@ -394,9 +689,9 @@ def suggest_genre(
     request: GenreRequest
 ):
     content = (
-        request.title +
-        " " +
-        request.description
+        request.title
+        + " "
+        + request.description
     ).lower()
 
     if any(
