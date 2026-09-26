@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Polly;
+using Polly.Extensions.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -84,6 +86,69 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddScoped<IBookRepository, BookRepository>();
 builder.Services.AddScoped<IBookService, BookService>();
 
+builder.Services
+    .AddHttpClient<IAiServiceClient, AiServiceClient>(
+        client =>
+        {
+            string baseUrl =
+                builder.Configuration["AiService:BaseUrl"]
+                ?? "http://127.0.0.1:8000/";
+
+            client.BaseAddress = new Uri(baseUrl);
+
+            client.Timeout =
+                TimeSpan.FromSeconds(25);
+        }
+    )
+    .AddPolicyHandler(
+        HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .WaitAndRetryAsync(
+                retryCount: 3,
+                sleepDurationProvider: retryAttempt =>
+                    TimeSpan.FromSeconds(
+                        Math.Pow(2, retryAttempt)
+                    ),
+                onRetry: (
+                    outcome,
+                    delay,
+                    retryAttempt,
+                    context
+                ) =>
+                {
+                    Console.WriteLine(
+                        $"AI retry {retryAttempt} after " +
+                        $"{delay.TotalSeconds} seconds."
+                    );
+                }
+            )
+    )
+    .AddPolicyHandler(
+        HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .CircuitBreakerAsync(
+                handledEventsAllowedBeforeBreaking: 3,
+                durationOfBreak:
+                    TimeSpan.FromSeconds(30),
+                onBreak: (
+                    outcome,
+                    breakDelay
+                ) =>
+                {
+                    Console.WriteLine(
+                        $"AI circuit opened for " +
+                        $"{breakDelay.TotalSeconds} seconds."
+                    );
+                },
+                onReset: () =>
+                {
+                    Console.WriteLine(
+                        "AI circuit reset."
+                    );
+                }
+            )
+    );
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(
@@ -91,7 +156,9 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy
-                .WithOrigins("http://localhost:4200")
+                .WithOrigins(
+                    "http://localhost:4200"
+                )
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         }
