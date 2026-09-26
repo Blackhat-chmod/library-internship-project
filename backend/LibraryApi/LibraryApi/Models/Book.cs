@@ -25,6 +25,8 @@ namespace LibraryApi.Models
         [NotMapped]
         public string Category { get; set; } = string.Empty;
 
+        public bool IsAvailable { get; set; } = true;
+
         public List<Category> Categories { get; set; } = new List<Category>();
     }
 }
