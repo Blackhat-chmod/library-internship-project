@@ -1,3 +1,6 @@
+Yes. Replace your entire `README.md` with the version below. I’ve kept your existing Week 4 and Week 5 documentation structure and extended it with the completed Week 6 work, rather than replacing the earlier material. :chatgpt-content-reference{index="0"} :chatgpt-content-reference{index="1"}
+
+```markdown
 # Library Internship Project
 
 This repository contains the Library Management project developed during the internship.
@@ -13,6 +16,12 @@ The project includes:
 - Embeddings and semantic search
 - Chroma vector database
 - Manual Retrieval-Augmented Generation (RAG)
+- LangChain and LCEL
+- Advanced retrieval
+- Conversation memory
+- LLM tool calling
+- Resilient .NET to AI service integration
+- End-to-end AI response streaming
 - Git feature branch and pull request workflow
 
 ---
@@ -31,6 +40,10 @@ Main backend features include:
 - Role-based authorization
 - SQL Server integration
 - Swagger API documentation
+- Book availability endpoint
+- Typed AI service client
+- Retry and circuit breaker policies
+- AI streaming proxy
 
 ## Authentication
 
@@ -66,10 +79,14 @@ Features include:
 - Route guard
 - Logout functionality
 - Role-based interface controls
+- AI Assistant page
+- Live AI response streaming
+- Streaming cancellation
+- Source display
 
 The JWT token is stored in `localStorage`.
 
-The HTTP interceptor automatically attaches the JWT token to authenticated API requests.
+The HTTP interceptor automatically attaches the JWT token to authenticated Angular HTTP requests.
 
 The route guard prevents unauthenticated users from opening protected routes.
 
@@ -98,6 +115,7 @@ GET /
 GET /health
 POST /summarize
 POST /ask
+POST /ask/stream
 POST /genre
 GET /test-malformed-response
 ```
@@ -110,7 +128,7 @@ http://127.0.0.1:8000/docs
 
 ---
 
-# Week 4 — Authentication and AI Service
+# Week 4 - Authentication and AI Service
 
 Week 4 introduced JWT authentication, Angular authentication integration, FastAPI, LLM APIs, prompt engineering, and Git workflow practice.
 
@@ -176,7 +194,7 @@ The FastAPI service introduced AI functionality into the project.
 
 The LLM provider is accessed through OpenRouter.
 
-The configured model is:
+The configured model during the original Week 4 work was:
 
 ```text
 openai/gpt-4o-mini
@@ -243,7 +261,7 @@ v0.4-week4
 
 ---
 
-# Week 5 — Embeddings, Vector Database and Manual RAG
+# Week 5 - Embeddings, Vector Database and Manual RAG
 
 Week 5 extends the Library Internship Project with semantic search and Retrieval-Augmented Generation (RAG).
 
@@ -326,11 +344,11 @@ The basic flow is:
 
 ```text
 Text
-↓
+  ->
 Embedding model
-↓
+  ->
 Vector
-↓
+  ->
 Semantic comparison
 ```
 
@@ -380,7 +398,7 @@ The Python corpus-fetching script is:
 ai-service/corpus_fetch.py
 ```
 
-During testing, four real books were retrieved from the database:
+During testing, books retrieved from the database included:
 
 - Advanced C#
 - Persistent Library Book
@@ -427,7 +445,7 @@ The pipeline performs the following stages:
 
 ## Chunking
 
-The default chunking configuration is:
+The Week 5 manual RAG configuration uses:
 
 ```text
 Chunk size: 500
@@ -450,30 +468,30 @@ The completed Week 5 data flow is:
 
 ```text
 SQL Server
-    ↓
+    ->
 ASP.NET Core GET /api/Books
-    ↓
+    ->
 Python corpus_fetch.py
-    ↓
+    ->
 library_corpus.json
-    ↓
+    ->
 SentenceTransformer embeddings
-    ↓
+    ->
 Chroma vector database
-    ↓
+    ->
 Semantic retrieval
-    ↓
+    ->
 FastAPI /ask
-    ↓
+    ->
 OpenRouter LLM
-    ↓
+    ->
 Grounded answer + sources
 ```
 
 During Week 5 the integration is primarily:
 
 ```text
-.NET API → Python AI service
+.NET API -> Python AI service
 ```
 
 The Angular frontend does not directly call the AI service during this stage.
@@ -506,7 +524,7 @@ Example response:
 {
   "answer": "Hajra Ali wrote Advanced C#.",
   "sources": [
-    "Advanced C# — Hajra Ali (book_5.json)"
+    "Advanced C# - Hajra Ali (book_5.json)"
   ]
 }
 ```
@@ -590,7 +608,7 @@ Hajra Ali
 
 with source attribution.
 
-## Test 4 — Out-of-Catalog Question
+## Test 4 - Out-of-Catalog Question
 
 Question:
 
@@ -648,7 +666,7 @@ The final `/ask` endpoint returns human-readable source labels.
 Example:
 
 ```text
-Advanced C# — Hajra Ali (book_5.json)
+Advanced C# - Hajra Ali (book_5.json)
 ```
 
 Source labels contain:
@@ -677,23 +695,13 @@ A deliberately incorrect change was committed:
 chunk_size = 0
 ```
 
-The incorrect commit was:
-
-```text
-chore: add incorrect chunk size for revert practice
-```
-
-It was then undone using:
+The incorrect commit was then undone using:
 
 ```text
 git revert
 ```
 
-The history preserved the original commit and the revert commit:
-
-```text
-Revert "chore: add incorrect chunk size for revert practice"
-```
+The history preserved both the original commit and the revert commit.
 
 This demonstrates safe rollback without rewriting existing Git history.
 
@@ -739,76 +747,19 @@ Responsibilities:
 
 ---
 
-# Important AI Service Files
-
-The AI service contains:
+# Week 5 Important AI Service Files
 
 ```text
 ai-service/
-├── chroma_demo.py
-├── corpus_fetch.py
-├── embed_demo.py
-├── library_corpus.json
-├── main.py
-├── rag_demo.py
-├── rag_evaluation.md
-├── rag_pipeline.py
-└── requirements.txt
-```
-
-## `embed_demo.py`
-
-Demonstrates:
-
-- Embeddings
-- Vector size
-- Cosine similarity
-- Semantic similarity
-
-## `chroma_demo.py`
-
-Demonstrates:
-
-- Chroma
-- Vector storage
-- Semantic retrieval
-- Metadata filtering
-
-## `corpus_fetch.py`
-
-Fetches the real catalog from:
-
-```text
-GET /api/Books
-```
-
-and creates the RAG corpus.
-
-## `library_corpus.json`
-
-Contains the processed real library catalog.
-
-## `rag_pipeline.py`
-
-Contains the manual RAG pipeline.
-
-## `rag_demo.py`
-
-Demonstrates the manual RAG flow.
-
-## `rag_evaluation.md`
-
-Contains retrieval and generation evaluation results.
-
-## `main.py`
-
-Contains FastAPI endpoints including:
-
-```text
-/health
-/summarize
-/ask
-/genre
+|-- chroma_demo.py
+|-- corpus_fetch.py
+|-- embed_demo.py
+|-- library_corpus.json
+|-- main.py
+|-- rag_demo.py
+|-- rag_evaluation.md
+|-- rag_pipeline.py
+`-- requirements.txt
 ```
 
 ---
@@ -830,7 +781,7 @@ Activate the virtual environment:
 Start FastAPI:
 
 ```cmd
-uvicorn main:app --reload
+python -m uvicorn main:app --reload
 ```
 
 Open Swagger:
@@ -896,6 +847,8 @@ Entity Framework Core
 SQL Server
 JWT Authentication
 Swagger
+Polly
+IHttpClientFactory
 ```
 
 ## Frontend
@@ -906,6 +859,9 @@ TypeScript
 HTML
 CSS
 RxJS
+Native Fetch API
+ReadableStream
+AbortController
 ```
 
 ## AI Service
@@ -918,21 +874,21 @@ Chroma
 OpenRouter
 HTTPX
 Pydantic
+LangChain
+LCEL
 ```
 
 ## AI Models
-
-LLM:
-
-```text
-openai/gpt-4o-mini
-```
 
 Embedding model:
 
 ```text
 sentence-transformers/all-MiniLM-L6-v2
 ```
+
+LLM access is provided through OpenRouter.
+
+Some Week 6 demonstrations use OpenRouter's free routing/model options depending on provider availability.
 
 ---
 
@@ -942,19 +898,19 @@ The project follows a feature-branch workflow:
 
 ```text
 main
- ↓
+  ->
 feature branch
- ↓
+  ->
 commit
- ↓
+  ->
 push
- ↓
+  ->
 pull request
- ↓
-review / branch protection
- ↓
+  ->
+review
+  ->
 merge
- ↓
+  ->
 delete feature branch
 ```
 
@@ -969,8 +925,6 @@ feat: add local Chroma vector database demo
 
 feat: build manual RAG pipeline: chunk, embed, store, retrieve, generate
 
-docs: add manual RAG evaluation results for 5 test questions
-
 feat: add /ask endpoint wiring RAG pipeline into FastAPI service
 
 feat: fetch real book catalog for RAG corpus
@@ -978,6 +932,810 @@ feat: fetch real book catalog for RAG corpus
 feat: connect real book corpus to Chroma RAG pipeline
 
 feat: finalize grounded /ask endpoint with source labels
+```
+
+---
+
+# Week 6 - LangChain, Tool Calling, Resilience and Streaming
+
+Week 6 extends the Library Internship Project from a manually implemented RAG system into a more production-shaped AI integration.
+
+The main Week 6 areas include:
+
+- LangChain Expression Language (LCEL)
+- Advanced document splitting
+- Multi-query retrieval
+- Structured output integration
+- Session-scoped conversation memory
+- LLM tool calling
+- Book availability API integration
+- Resilient .NET to FastAPI communication
+- Retry and exponential backoff
+- Timeout handling
+- Circuit breaker
+- Graceful service failure
+- Server-Sent Events (SSE)
+- End-to-end AI response streaming
+- Angular native fetch streaming
+- Streaming cancellation
+- Interactive Git rebase
+
+---
+
+# Week 6 LangChain RAG
+
+The existing Week 5 RAG concepts were rebuilt using LangChain.
+
+The LCEL demonstration is located in:
+
+```text
+ai-service/lcel_rag_demo.py
+```
+
+The chain uses LangChain runnable components to connect the RAG stages.
+
+The flow is:
+
+```text
+User question
+    ->
+Input validation
+    ->
+Retriever
+    ->
+Context construction
+    ->
+Prompt
+    ->
+LLM
+    ->
+Output parser
+    ->
+Answer
+```
+
+A custom input guard rejects questions shorter than three characters.
+
+Example:
+
+```text
+Question: a
+```
+
+Result:
+
+```text
+Question too short to answer meaningfully.
+```
+
+The LCEL implementation was tested successfully with a normal programming question and the short-question guard.
+
+---
+
+# Advanced Retrieval
+
+Week 6 introduces more advanced LangChain retrieval techniques.
+
+The demonstration is located in:
+
+```text
+ai-service/advanced_retrieval_demo.py
+```
+
+The implementation uses:
+
+```text
+RecursiveCharacterTextSplitter
+```
+
+with:
+
+```text
+Chunk size: 300
+Chunk overlap: 40
+```
+
+The base retriever returns the top relevant chunks.
+
+Week 6 also introduces:
+
+```text
+MultiQueryRetriever
+```
+
+MultiQueryRetriever asks the LLM to generate alternate versions of the user's question.
+
+The alternate queries are then used to retrieve additional potentially relevant documents.
+
+Testing compared normal retrieval and MultiQueryRetriever across five questions.
+
+The tests demonstrated an important trade-off:
+
+```text
+Multi-query retrieval can improve recall,
+but broader queries can also reduce precision.
+```
+
+For example, alternate queries sometimes retrieved additional relevant context, but they could also introduce unrelated books.
+
+---
+
+# Session-Scoped Conversation Memory
+
+Week 6 introduces conversation memory using LangChain message history.
+
+The demonstration is located in:
+
+```text
+ai-service/structured_memory_demo.py
+```
+
+The implementation uses:
+
+```text
+RunnableWithMessageHistory
+```
+
+with an in-memory session store.
+
+A conversation using the same session can understand follow-up questions.
+
+Example:
+
+```text
+User:
+Tell me about Journey Beyond Earth.
+
+User:
+What genre is it?
+```
+
+The second question can use the previous conversation context.
+
+A fresh session asking only:
+
+```text
+What genre is it?
+```
+
+does not have the previous book context.
+
+## Memory Limitation
+
+The Week 6 implementation uses in-memory conversation storage.
+
+This has an important limitation:
+
+```text
+Conversation history is lost when the AI service process restarts.
+```
+
+A production implementation would normally use persistent storage such as a database or distributed cache.
+
+---
+
+# Structured Output
+
+Week 6 includes LangChain structured-output integration using Pydantic.
+
+The structured model contains fields such as:
+
+```text
+answer
+confidence
+sources
+```
+
+The implementation uses:
+
+```text
+with_structured_output(...)
+```
+
+Live structured-output verification was limited by the available free OpenRouter provider/model behavior during testing.
+
+The integration code is present, but some free provider responses either reached rate limits or returned output that did not satisfy the requested JSON schema.
+
+This limitation is documented instead of treating an unsuccessful provider response as a successful structured-output test.
+
+---
+
+# Book Availability Tool Calling
+
+Week 6 introduces LLM tool calling.
+
+A new availability field was added to the Book model:
+
+```text
+IsAvailable
+```
+
+The database schema was updated through an Entity Framework Core migration.
+
+The public availability endpoint is:
+
+```text
+GET /api/Books/{id}/availability
+```
+
+Example response:
+
+```json
+{
+  "bookId": 5,
+  "title": "Advanced C#",
+  "isAvailable": false
+}
+```
+
+The LangChain tool-calling demonstration is located in:
+
+```text
+ai-service/availability_tool_demo.py
+```
+
+The tool is:
+
+```text
+check_book_availability
+```
+
+The language model decides whether the availability tool is required.
+
+## Tool-Calling Tests
+
+Availability question:
+
+```text
+Is book 5 available right now?
+```
+
+Result:
+
+```text
+Tool call detected.
+```
+
+The tool called the live ASP.NET Core availability endpoint and returned the real book availability status.
+
+The tool result was then passed back to the model to generate a natural-language answer.
+
+A non-availability question was also tested:
+
+```text
+What genre is book 5?
+```
+
+Result:
+
+```text
+Correct: no availability tool call was made.
+```
+
+This demonstrates that the tool is used only when the question requires availability information.
+
+---
+
+# Resilient .NET to AI Service Integration
+
+Week 6 introduces a typed .NET HTTP client for communication with the FastAPI AI service.
+
+The main files include:
+
+```text
+Services/IAiServiceClient.cs
+Services/AiServiceClient.cs
+Controllers/AssistantController.cs
+```
+
+The .NET endpoint is:
+
+```text
+POST /api/Assistant/ask
+```
+
+The communication flow is:
+
+```text
+Angular / Swagger
+    ->
+ASP.NET Core
+    ->
+IAiServiceClient
+    ->
+AiServiceClient
+    ->
+FastAPI /ask
+    ->
+RAG / LLM
+    ->
+ASP.NET Core response
+```
+
+The HTTP client is created through:
+
+```text
+IHttpClientFactory
+```
+
+The implementation includes:
+
+- Retry
+- Exponential backoff
+- Timeout
+- Circuit breaker
+- Graceful service-unavailable responses
+
+---
+
+# Retry and Exponential Backoff
+
+When the FastAPI service is unavailable, the .NET client automatically retries.
+
+The configured retry delays include:
+
+```text
+2 seconds
+4 seconds
+8 seconds
+```
+
+Testing with FastAPI deliberately stopped showed retry messages such as:
+
+```text
+AI retry 1 after 2 seconds.
+AI retry 2 after 4 seconds.
+AI retry 3 after 8 seconds.
+```
+
+This prevents temporary connection failures from immediately causing the request to fail.
+
+---
+
+# Circuit Breaker
+
+Repeated AI-service failures cause the circuit breaker to open.
+
+During testing, the application logged:
+
+```text
+AI circuit opened for 30 seconds.
+```
+
+While the circuit is open, additional calls fail quickly rather than repeatedly attempting to contact an unavailable AI service.
+
+The controller handles the open circuit and returns a graceful response instead of crashing.
+
+Example HTTP status:
+
+```text
+503 Service Unavailable
+```
+
+Example response:
+
+```json
+{
+  "message": "The AI assistant is temporarily unavailable. Please try again shortly."
+}
+```
+
+This demonstrates resilient behavior when the Python AI service is offline.
+
+---
+
+# End-to-End AI Streaming
+
+Week 6 adds real end-to-end streaming.
+
+The completed streaming path is:
+
+```text
+OpenRouter LLM
+    ->
+FastAPI
+    ->
+.NET streaming proxy
+    ->
+Angular
+    ->
+Live answer in browser
+```
+
+The FastAPI streaming endpoint is:
+
+```text
+POST /ask/stream
+```
+
+The .NET streaming proxy is:
+
+```text
+POST /api/assistant/ask/stream
+```
+
+---
+
+# FastAPI Streaming
+
+The streaming helper is located in:
+
+```text
+ai-service/streaming_rag.py
+```
+
+The OpenRouter request uses:
+
+```json
+{
+  "stream": true
+}
+```
+
+This means the system receives real model-generated chunks instead of waiting for the entire answer before returning it.
+
+FastAPI returns the stream using:
+
+```text
+text/event-stream
+```
+
+The SSE events include:
+
+```text
+token
+sources
+done
+error
+```
+
+Example:
+
+```text
+data: {"type": "token", "content": "Advanced"}
+
+data: {"type": "token", "content": " C#"}
+
+data: {"type": "sources", "sources": [...]}
+
+data: {"type": "done", "completed": true}
+```
+
+Direct FastAPI streaming was verified using:
+
+```cmd
+curl.exe -N
+```
+
+The individual model chunks appeared progressively in the terminal.
+
+---
+
+# .NET Streaming Proxy
+
+The .NET streaming controller is:
+
+```text
+Controllers/AssistantStreamController.cs
+```
+
+The proxy calls FastAPI using:
+
+```text
+HttpCompletionOption.ResponseHeadersRead
+```
+
+This allows the .NET application to begin processing the response before the entire FastAPI response has completed.
+
+The proxy forwards:
+
+```text
+Content-Type: text/event-stream
+```
+
+and disables unnecessary buffering.
+
+A key operation is:
+
+```text
+Response.Body.FlushAsync(...)
+```
+
+This explicitly flushes complete SSE events to the downstream client.
+
+Authenticated streaming through the .NET proxy was verified using curl.
+
+The response included:
+
+```text
+HTTP/1.1 200 OK
+Content-Type: text/event-stream
+Transfer-Encoding: chunked
+X-Accel-Buffering: no
+```
+
+and token events arrived progressively.
+
+---
+
+# FlushAsync Experiment
+
+As part of Week 6 testing, the explicit:
+
+```text
+FlushAsync()
+```
+
+operation was temporarily removed from the .NET streaming proxy.
+
+The streaming path was tested without it and then the explicit flush logic was restored.
+
+Local development servers and browsers can sometimes flush buffered data automatically, so the visible difference can vary between environments.
+
+The final implementation keeps:
+
+```text
+Response.Body.FlushAsync(...)
+```
+
+because explicit flushing provides more reliable immediate delivery of SSE events.
+
+---
+
+# Angular Streaming Chat UI
+
+A new Angular AI Assistant interface was added.
+
+The main files are:
+
+```text
+frontend/library-angular/src/app/assistant-chat/
+|-- assistant-chat.ts
+|-- assistant-chat.html
+`-- assistant-chat.css
+```
+
+The route is:
+
+```text
+/assistant
+```
+
+The page is protected using the existing Angular authentication guard.
+
+The interface provides:
+
+- Question input
+- Ask AI button
+- Live streamed answer
+- Streaming indicator
+- Stop button
+- Clear button
+- Source display
+- Error display
+
+---
+
+# Angular Native Fetch Streaming
+
+Angular uses the browser's native:
+
+```text
+fetch()
+```
+
+API for streaming.
+
+The response stream is read using:
+
+```text
+response.body.getReader()
+```
+
+and decoded progressively using:
+
+```text
+TextDecoder
+```
+
+Because native `fetch()` does not pass through the Angular HTTP interceptor, the JWT token is manually added:
+
+```text
+Authorization: Bearer <JWT>
+```
+
+The UI appends each incoming token to the current answer so users can see the answer being generated in real time.
+
+---
+
+# Angular Streaming Change Detection
+
+During initial testing, tokens were reaching the browser but the Angular interface was not repainting after every chunk.
+
+The accumulated answer became visible only after another UI event occurred.
+
+This was resolved by triggering Angular change detection after streamed events.
+
+The final result displays the answer progressively while the stream is active.
+
+---
+
+# Streaming Cancellation
+
+The Angular streaming interface supports cancellation using:
+
+```text
+AbortController
+```
+
+When the user presses:
+
+```text
+Stop
+```
+
+the active fetch request is cancelled.
+
+The interface displays:
+
+```text
+Streaming was cancelled.
+```
+
+The cancellation flow was successfully tested.
+
+---
+
+# Week 6 End-to-End Streaming Flow
+
+The final streaming architecture is:
+
+```text
+User question
+    ->
+Angular AI Assistant
+    ->
+Native fetch + JWT
+    ->
+POST /api/assistant/ask/stream
+    ->
+ASP.NET Core streaming proxy
+    ->
+POST /ask/stream
+    ->
+FastAPI RAG retrieval
+    ->
+OpenRouter stream=true
+    ->
+SSE token events
+    ->
+.NET FlushAsync()
+    ->
+Angular ReadableStream
+    ->
+Live answer in browser
+```
+
+---
+
+# Week 6 Git Workflow
+
+Week 6 used the following main feature branches:
+
+```text
+feature/langchain-rag-chain
+feature/availability-tool
+feature/resilient-ai-client
+feature/streaming-chat-ui
+```
+
+Each major feature was developed independently and merged through a pull request.
+
+The Week 6 pull requests were:
+
+```text
+#20 LangChain RAG
+#21 Book Availability Tool
+#22 Resilient AI Client
+#23 End-to-End Streaming
+```
+
+---
+
+# Interactive Rebase Practice
+
+Week 6 included interactive rebase practice.
+
+A temporary branch was created:
+
+```text
+practice/interactive-rebase
+```
+
+Five deliberately small commits were created.
+
+Interactive rebase was used to squash them into one clean commit:
+
+```text
+chore: complete interactive rebase practice
+```
+
+This demonstrated how several messy commits can be cleaned before creating a pull request.
+
+---
+
+# Interactive Rebase on a Real Feature Branch
+
+Interactive rebase was also applied to the real:
+
+```text
+feature/langchain-rag-chain
+```
+
+branch before its pull request.
+
+The original Part A, Part B and Part C commits were squashed into:
+
+```text
+feat: build advanced LangChain RAG chain with retrieval and memory
+```
+
+The rewritten branch was updated using:
+
+```cmd
+git push --force-with-lease
+```
+
+This demonstrates safe history rewriting on a feature branch without rebasing the shared `main` branch.
+
+The streaming branch was also rebased onto the latest `main` before its final pull request so that the resilience and streaming changes could be combined cleanly.
+
+---
+
+# Week 6 Known Limitations
+
+The current Week 6 implementation has the following known limitations:
+
+1. Conversation memory is stored in memory and is lost when FastAPI restarts.
+
+2. Live structured-output verification depends on the capabilities and availability of free OpenRouter models. During testing, some free providers were rate-limited or did not return the requested structured schema.
+
+3. The local development setup uses separate FastAPI, ASP.NET Core and Angular processes.
+
+4. The streaming implementation is designed for the internship development environment and has not yet been deployed behind a production reverse proxy.
+
+5. Retrieval quality depends on the available library corpus. If relevant information is not present in the corpus, the assistant may correctly respond that it does not have the information.
+
+---
+
+# Week 6 Important Files
+
+```text
+ai-service/
+|-- advanced_retrieval_demo.py
+|-- availability_tool_demo.py
+|-- lcel_rag_demo.py
+|-- main.py
+|-- streaming_rag.py
+`-- structured_memory_demo.py
+
+backend/LibraryApi/LibraryApi/
+|-- Controllers/
+|   |-- AssistantController.cs
+|   `-- AssistantStreamController.cs
+|-- Models/
+|   |-- AiAskResponse.cs
+|   `-- AskDto.cs
+|-- Services/
+|   |-- AiServiceClient.cs
+|   `-- IAiServiceClient.cs
+`-- Program.cs
+
+frontend/library-angular/src/app/
+`-- assistant-chat/
+    |-- assistant-chat.ts
+    |-- assistant-chat.html
+    `-- assistant-chat.css
 ```
 
 ---
@@ -991,19 +1749,20 @@ Existing tags include:
 ```text
 v0.3-week3
 v0.4-week4
+v0.5-week5
 ```
 
-The Week 5 release tag is:
+After the final Week 6 documentation commit is complete, the Week 6 release is tagged as:
 
 ```text
-v0.5-week5
+v0.6-week6
 ```
 
 ---
 
 # Current Project Status
 
-At the end of Week 5, the project includes:
+At the end of Week 6, the project includes:
 
 - ASP.NET Core Library API
 - SQL Server persistence
@@ -1013,14 +1772,35 @@ At the end of Week 5, the project includes:
 - Protected frontend routes
 - FastAPI AI service
 - OpenRouter LLM integration
-- Local text embeddings
+- Local Sentence Transformer embeddings
 - Chroma vector search
 - Real catalog corpus generation
 - Manual RAG pipeline
 - Grounded `/ask` endpoint
 - Source attribution
-- Out-of-catalog refusal behavior
+- LCEL-based RAG demonstrations
+- Recursive document splitting
+- Multi-query retrieval
+- Session-scoped conversation memory
+- Structured-output integration
+- LLM tool calling
+- Live book availability lookup
+- Typed .NET AI service client
+- Retry with exponential backoff
+- Timeout handling
+- Circuit breaker
+- Graceful `503` responses
+- FastAPI SSE streaming
+- .NET streaming proxy
+- Angular AI Assistant
+- Live token-by-token rendering
+- JWT-authenticated streaming
+- Streaming cancellation
 - Git revert practice
+- Interactive rebase practice
+- Interactive rebase on a real feature branch
 - Feature branch and pull request workflow
 
-Week 5 prepares the project for the next stage of AI integration and Week 6 development.
+Week 6 moves the project from a manually implemented RAG prototype toward a more resilient, interactive and production-shaped AI-enabled application.
+```
+
