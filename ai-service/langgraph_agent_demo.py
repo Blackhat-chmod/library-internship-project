@@ -1,4 +1,3 @@
-import operator
 from typing import Annotated, TypedDict
 
 from langchain_core.messages import (
@@ -8,11 +7,14 @@ from langchain_core.messages import (
     ToolMessage,
 )
 from langchain_core.tools import tool
+
 from langgraph.graph import (
     END,
     START,
     StateGraph,
 )
+from langgraph.graph.message import add_messages
+from langgraph.prebuilt import ToolNode
 
 
 MAX_STEPS = 6
@@ -21,7 +23,7 @@ MAX_STEPS = 6
 class AgentState(TypedDict):
     messages: Annotated[
         list[BaseMessage],
-        operator.add,
+        add_messages,
     ]
     step_count: int
     status: str
@@ -30,7 +32,8 @@ class AgentState(TypedDict):
 @tool
 def search_catalog(query: str) -> str:
     """
-    Search the library catalog for books matching a query.
+    Search the library catalog for books matching
+    a title, genre, or search query.
     """
 
     catalog = [
@@ -78,7 +81,8 @@ def search_catalog(query: str) -> str:
 @tool
 def check_availability(title: str) -> str:
     """
-    Check whether a library book is currently available.
+    Check whether a specific library book is
+    currently available.
     """
 
     availability = {
@@ -108,8 +112,8 @@ def failing_library_tool(query: str) -> str:
     """
     Demonstration tool that always fails.
 
-    It is used to verify that a tool failure becomes
-    an observation instead of crashing the graph.
+    This tool is used only for the Part A
+    tool-failure experiment.
     """
 
     raise RuntimeError(
@@ -117,25 +121,25 @@ def failing_library_tool(query: str) -> str:
     )
 
 
-TOOLS = {
-    "search_catalog": search_catalog,
-    "check_availability": check_availability,
-    "failing_library_tool": failing_library_tool,
-}
+TOOLS = [
+    search_catalog,
+    check_availability,
+    failing_library_tool,
+]
 
 
 def agent_node(
     state: AgentState,
 ) -> dict:
     """
-    Decide the next action in the explicit agent loop.
+    Think about the current state and decide whether
+    to call a tool or produce a final answer.
     """
 
     step = state["step_count"] + 1
     messages = state["messages"]
     last_message = messages[-1]
 
-    # First decision based on the user's request.
     if isinstance(
         last_message,
         HumanMessage,
@@ -144,7 +148,6 @@ def agent_node(
             last_message.content
         ).lower()
 
-        # Dedicated failing-tool challenge.
         if (
             "failing tool" in question
             or "failure test" in question
@@ -163,7 +166,10 @@ def agent_node(
             return {
                 "messages": [
                     AIMessage(
-                        content="",
+                        content=(
+                            "I should test the failing "
+                            "library tool."
+                        ),
                         tool_calls=[
                             tool_call
                         ],
@@ -173,7 +179,6 @@ def agent_node(
                 "status": "tool_requested",
             }
 
-        # Normal science-fiction scenario.
         if (
             "science fiction" in question
             or "science-fiction" in question
@@ -192,7 +197,10 @@ def agent_node(
             return {
                 "messages": [
                     AIMessage(
-                        content="",
+                        content=(
+                            "I should search the catalog "
+                            "for science fiction books."
+                        ),
                         tool_calls=[
                             tool_call
                         ],
@@ -216,7 +224,6 @@ def agent_node(
             "status": "completed",
         }
 
-    # Process observations returned by tools.
     if isinstance(
         last_message,
         ToolMessage,
@@ -225,20 +232,32 @@ def agent_node(
             last_message.name
             == "failing_library_tool"
         ):
-            return {
-                "messages": [
-                    AIMessage(
-                        content=(
-                            "The library tool failed, "
-                            "so I could not complete "
-                            "that operation safely. "
-                            "Please try again later."
+            if (
+                "error" in str(
+                    last_message.content
+                ).lower()
+                or "failed" in str(
+                    last_message.content
+                ).lower()
+                or "runtimeerror" in str(
+                    last_message.content
+                ).lower()
+            ):
+                return {
+                    "messages": [
+                        AIMessage(
+                            content=(
+                                "The library tool failed, "
+                                "so I could not complete "
+                                "that operation safely. "
+                                "Please try again later."
+                            )
                         )
-                    )
-                ],
-                "step_count": step,
-                "status": "completed_with_tool_error",
-            }
+                    ],
+                    "step_count": step,
+                    "status":
+                        "completed_with_tool_error",
+                }
 
         if (
             last_message.name
@@ -250,13 +269,8 @@ def agent_node(
 
             available_titles = []
 
-            for line in (
-                tool_text.splitlines()
-            ):
-                if (
-                    "available=True"
-                    in line
-                ):
+            for line in tool_text.splitlines():
+                if "available=True" in line:
                     title = (
                         line
                         .split("|")[0]
@@ -268,9 +282,7 @@ def agent_node(
                     )
 
             if available_titles:
-                title = (
-                    available_titles[0]
-                )
+                title = available_titles[0]
 
                 tool_call = {
                     "name": "check_availability",
@@ -284,7 +296,11 @@ def agent_node(
                 return {
                     "messages": [
                         AIMessage(
-                            content="",
+                            content=(
+                                f"I found {title}. "
+                                "I should confirm its "
+                                "current availability."
+                            ),
                             tool_calls=[
                                 tool_call
                             ],
@@ -298,7 +314,7 @@ def agent_node(
                 "messages": [
                     AIMessage(
                         content=(
-                            "I found science-fiction "
+                            "I found science fiction "
                             "books, but none are "
                             "currently available."
                         )
@@ -317,7 +333,7 @@ def agent_node(
                     AIMessage(
                         content=(
                             "I found an available "
-                            "science-fiction book: "
+                            "science fiction book: "
                             f"{last_message.content}"
                         )
                     )
@@ -330,97 +346,13 @@ def agent_node(
         "messages": [
             AIMessage(
                 content=(
-                    "I could not determine "
-                    "another useful action."
+                    "I could not determine another "
+                    "useful action."
                 )
             )
         ],
         "step_count": step,
         "status": "completed",
-    }
-
-
-def tool_node(
-    state: AgentState,
-) -> dict:
-    """
-    Execute tool calls requested by the agent.
-
-    Tool exceptions are converted into ToolMessages so
-    the graph can observe and respond to the failure.
-    """
-
-    last_message = (
-        state["messages"][-1]
-    )
-
-    if not isinstance(
-        last_message,
-        AIMessage,
-    ):
-        return {
-            "messages": [],
-            "step_count": state["step_count"],
-            "status": "completed",
-        }
-
-    results = []
-
-    for tool_call in (
-        last_message.tool_calls
-    ):
-        tool_name = tool_call["name"]
-        tool_args = tool_call["args"]
-        tool_call_id = tool_call["id"]
-
-        selected_tool = (
-            TOOLS.get(tool_name)
-        )
-
-        if selected_tool is None:
-            results.append(
-                ToolMessage(
-                    content=(
-                        f"Unknown tool: {tool_name}"
-                    ),
-                    tool_call_id=tool_call_id,
-                    name=tool_name,
-                )
-            )
-
-            continue
-
-        try:
-            result = (
-                selected_tool.invoke(
-                    tool_args
-                )
-            )
-
-            results.append(
-                ToolMessage(
-                    content=str(result),
-                    tool_call_id=tool_call_id,
-                    name=tool_name,
-                )
-            )
-
-        except Exception as error:
-            results.append(
-                ToolMessage(
-                    content=(
-                        "Tool execution failed: "
-                        f"{error}"
-                    ),
-                    tool_call_id=tool_call_id,
-                    name=tool_name,
-                )
-            )
-
-    return {
-        "messages": results,
-        "step_count": state["step_count"],
-        "status": "tool_completed",
     }
 
 
@@ -450,7 +382,7 @@ def route_after_agent(
     state: AgentState,
 ) -> str:
     """
-    Route after every agent decision.
+    Route to a tool, give-up node, or END.
     """
 
     if (
@@ -459,9 +391,7 @@ def route_after_agent(
     ):
         return "give_up"
 
-    last_message = (
-        state["messages"][-1]
-    )
+    last_message = state["messages"][-1]
 
     if (
         isinstance(
@@ -479,8 +409,8 @@ def route_after_tools(
     state: AgentState,
 ) -> str:
     """
-    Return tool observations to the agent unless
-    the hard step limit has been reached.
+    Return observations to the agent unless the
+    hard step limit has been reached.
     """
 
     if (
@@ -494,7 +424,8 @@ def route_after_tools(
 
 def build_graph():
     """
-    Build and compile the explicit LangGraph loop.
+    Build and compile the explicit LangGraph
+    think-act-observe loop.
     """
 
     builder = StateGraph(
@@ -504,6 +435,11 @@ def build_graph():
     builder.add_node(
         "agent",
         agent_node,
+    )
+
+    tool_node = ToolNode(
+        TOOLS,
+        handle_tool_errors=True,
     )
 
     builder.add_node(
@@ -552,12 +488,14 @@ def print_result(
     result: AgentState,
 ) -> None:
     """
-    Print the final state and complete message trace.
+    Print the complete execution using the required
+    thought/tool-call/observation/answer labels.
     """
 
-    print(
-        "\n=== FINAL RESULT ==="
-    )
+    print()
+    print("=" * 70)
+    print("FINAL RESULT")
+    print("=" * 70)
 
     print(
         f"Status: {result['status']}"
@@ -567,28 +505,71 @@ def print_result(
         f"Steps: {result['step_count']}"
     )
 
-    print(
-        "\n=== MESSAGE TRACE ==="
-    )
+    print()
+    print("=" * 70)
+    print("AGENT TRACE")
+    print("=" * 70)
 
-    for message in (
-        result["messages"]
-    ):
-        print(
-            f"{type(message).__name__}: "
-            f"{message.content}"
-        )
+    messages = result["messages"]
 
-        if (
-            isinstance(
-                message,
-                AIMessage,
-            )
-            and message.tool_calls
+    for index, message in enumerate(messages):
+        if isinstance(
+            message,
+            HumanMessage,
         ):
+            print()
             print(
-                "Tool calls:",
-                message.tool_calls,
+                f"USER: {message.content}"
+            )
+            continue
+
+        if isinstance(
+            message,
+            ToolMessage,
+        ):
+            print()
+            print(
+                "OBSERVATION:"
+            )
+            print(
+                message.content
+            )
+            continue
+
+        if isinstance(
+            message,
+            AIMessage,
+        ):
+            if message.tool_calls:
+                if message.content:
+                    print()
+                    print(
+                        "THOUGHT:"
+                    )
+                    print(
+                        message.content
+                    )
+
+                for call in message.tool_calls:
+                    print()
+                    print(
+                        "TOOL-CALL:"
+                    )
+                    print(
+                        f"Tool: {call['name']}"
+                    )
+                    print(
+                        f"Arguments: {call['args']}"
+                    )
+
+                continue
+
+            print()
+            print(
+                "ANSWER:"
+            )
+            print(
+                message.content
             )
 
 
@@ -596,7 +577,7 @@ def run_scenario(
     question: str,
 ) -> None:
     """
-    Run one demonstration scenario.
+    Run one Part A demonstration.
     """
 
     graph = build_graph()
@@ -623,13 +604,26 @@ def run_scenario(
     )
 
 
-if __name__ == "__main__":
+def main() -> None:
+    print()
+    print("=" * 70)
+    print("WEEK 7 - PART A LANGGRAPH AGENT")
+    print("=" * 70)
+
+    print()
+    print(
+        f"MAX_STEPS = {MAX_STEPS}"
+    )
+
+    print()
     print(
         "Choose a Part A scenario:"
     )
+
     print(
         "1 - Normal agent loop"
     )
+
     print(
         "2 - Always-failing tool challenge"
     )
@@ -646,6 +640,10 @@ if __name__ == "__main__":
 
     else:
         run_scenario(
-            "Find me a science-fiction "
-            "book that is available."
+            "Find a science fiction book "
+            "and tell me if it is available."
         )
+
+
+if __name__ == "__main__":
+    main()
