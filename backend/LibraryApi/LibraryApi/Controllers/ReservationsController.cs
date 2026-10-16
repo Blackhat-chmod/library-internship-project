@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Security.Claims;
 using LibraryApi.Data;
 using LibraryApi.Models;
@@ -12,6 +13,9 @@ namespace LibraryApi.Controllers
     public class ReservationsController : ControllerBase
     {
         private readonly LibraryDbContext context;
+
+        private static readonly ConcurrentDictionary<string, int>
+            RetryDemoAttempts = new();
 
         public ReservationsController(
             LibraryDbContext context)
@@ -59,6 +63,17 @@ namespace LibraryApi.Controllers
                             "Idempotency-Key cannot exceed 100 characters."
                     }
                 );
+            }
+
+            IActionResult? retryDemoResult =
+                RunRetryDemoIfRequested(
+                    userId.Value,
+                    idempotencyKey
+                );
+
+            if (retryDemoResult != null)
+            {
+                return retryDemoResult;
             }
 
             Reservation? replay =
@@ -249,6 +264,72 @@ namespace LibraryApi.Controllers
                     .ToListAsync();
 
             return Ok(reservations);
+        }
+
+        private IActionResult? RunRetryDemoIfRequested(
+            int userId,
+            string idempotencyKey)
+        {
+            const string retryDemoPrefix =
+                "week7-retry-demo-";
+
+            const string retryLimitPrefix =
+                "week7-retry-limit-";
+
+            bool isSuccessDemo =
+                idempotencyKey.StartsWith(
+                    retryDemoPrefix,
+                    StringComparison.Ordinal
+                );
+
+            bool isLimitDemo =
+                idempotencyKey.StartsWith(
+                    retryLimitPrefix,
+                    StringComparison.Ordinal
+                );
+
+            if (!isSuccessDemo && !isLimitDemo)
+            {
+                return null;
+            }
+
+            string attemptKey =
+                $"{userId}:{idempotencyKey}";
+
+            int attempt =
+                RetryDemoAttempts.AddOrUpdate(
+                    attemptKey,
+                    1,
+                    (_, current) => current + 1
+                );
+
+            if (isLimitDemo)
+            {
+                return StatusCode(
+                    StatusCodes.Status503ServiceUnavailable,
+                    new
+                    {
+                        message =
+                            "Week 7 retry-limit demo: simulated persistent transient failure.",
+                        attempt
+                    }
+                );
+            }
+
+            if (attempt <= 2)
+            {
+                return StatusCode(
+                    StatusCodes.Status503ServiceUnavailable,
+                    new
+                    {
+                        message =
+                            "Week 7 retry demo: simulated transient failure.",
+                        attempt
+                    }
+                );
+            }
+
+            return null;
         }
 
         private int? GetAuthenticatedUserId()

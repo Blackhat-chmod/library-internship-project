@@ -4,9 +4,9 @@ from pathlib import Path
 import httpx
 
 
-BOOKS_API_URL = "https://localhost:7272/api/Books"
+BOOKS_API_URL = "http://localhost:5087/api/Books"
 
-OUTPUT_FILE = Path("library_corpus.json")
+OUTPUT_FILE = Path(__file__).resolve().parent / "library_corpus.json"
 
 
 def get_author_name(book: dict) -> str:
@@ -66,6 +66,10 @@ def build_document(book: dict) -> dict:
 
     categories = get_category_names(book)
 
+    is_available = bool(
+        book.get("isAvailable", False)
+    )
+
     description = str(
         book.get("description")
         or (
@@ -79,6 +83,7 @@ def build_document(book: dict) -> dict:
         f"Title: {title}\n"
         f"Author: {author}\n"
         f"Categories: {', '.join(categories)}\n"
+        f"Available: {is_available}\n"
         f"Description: {description}"
     )
 
@@ -87,13 +92,13 @@ def build_document(book: dict) -> dict:
         "title": title,
         "author": author,
         "categories": categories,
-        "text": text
+        "is_available": is_available,
+        "text": text,
     }
 
 
 def fetch_books() -> list[dict]:
     with httpx.Client(
-        verify=False,
         timeout=30.0
     ) as client:
         response = client.get(
@@ -132,9 +137,9 @@ def main():
         json.dumps(
             corpus,
             indent=2,
-            ensure_ascii=False
+            ensure_ascii=False,
         ),
-        encoding="utf-8"
+        encoding="utf-8",
     )
 
     print(
