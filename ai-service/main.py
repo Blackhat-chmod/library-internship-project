@@ -22,6 +22,10 @@ from streaming_rag import (
     generate_answer_stream
 )
 
+from week7_agent_api import (
+    router as week7_agent_router
+)
+
 
 load_dotenv()
 
@@ -32,7 +36,11 @@ app = FastAPI(
         "FastAPI AI service for the "
         "Library Internship Project"
     ),
-    version="1.3.0"
+    version="1.4.0"
+)
+
+app.include_router(
+    week7_agent_router
 )
 
 
@@ -268,7 +276,7 @@ def health_check():
         "status": "healthy",
         "service":
             "library-ai-service",
-        "version": "1.3.0"
+        "version": "1.4.0"
     }
 
 

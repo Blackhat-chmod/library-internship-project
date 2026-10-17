@@ -62,7 +62,51 @@ Important routing rules:
 
 MODEL_NAME = "nvidia/nemotron-3.5-lightning:free"
 
+ROUTER_TIMEOUT_SECONDS = 6
 TEST_DELAY_SECONDS = 4
+
+
+ACTION_PHRASES = (
+    "reserve",
+    "reservation",
+    "cancel my reservation",
+    "cancel the reservation",
+    "make a reservation",
+    "book this",
+    "borrow this",
+)
+
+CATALOG_PHRASES = (
+    "book",
+    "author",
+    "wrote",
+    "written by",
+    "catalog",
+    "recommend",
+    "recommendation",
+    "available",
+    "availability",
+    "describe",
+    "description",
+    "compare",
+    "worth reading",
+    "good to read",
+    "good book",
+)
+
+CHITCHAT_PHRASES = (
+    "hello",
+    "hi",
+    "hey",
+    "good morning",
+    "good afternoon",
+    "good evening",
+    "thanks",
+    "thank you",
+    "how are you",
+    "what can you do",
+    "have a nice day",
+)
 
 
 def build_router():
@@ -79,22 +123,85 @@ def build_router():
         api_key=api_key,
         base_url="https://openrouter.ai/api/v1",
         temperature=0,
+        timeout=ROUTER_TIMEOUT_SECONDS,
+        max_retries=0,
     )
 
     return model.with_structured_output(RouteDecision)
 
 
-def route_message(message: str) -> RouteDecision:
-    router = build_router()
-
-    decision = router.invoke(
-        [
-            SystemMessage(content=ROUTER_PROMPT),
-            HumanMessage(content=message),
-        ]
+def fallback_route_message(
+    message: str,
+    failure_reason: str,
+) -> RouteDecision:
+    normalized = " ".join(
+        message.lower().strip().split()
     )
 
-    return decision
+    if any(
+        phrase in normalized
+        for phrase in ACTION_PHRASES
+    ):
+        return RouteDecision(
+            route="action",
+            reason=(
+                "Deterministic fallback selected action "
+                "after the remote router was unavailable."
+            ),
+        )
+
+    if any(
+        phrase in normalized
+        for phrase in CATALOG_PHRASES
+    ):
+        return RouteDecision(
+            route="catalog",
+            reason=(
+                "Deterministic fallback selected catalog "
+                "after the remote router was unavailable."
+            ),
+        )
+
+    if any(
+        phrase in normalized
+        for phrase in CHITCHAT_PHRASES
+    ):
+        return RouteDecision(
+            route="chitchat",
+            reason=(
+                "Deterministic fallback selected chitchat "
+                "after the remote router was unavailable."
+            ),
+        )
+
+    return RouteDecision(
+        route="chitchat",
+        reason=(
+            "Deterministic safe fallback selected chitchat "
+            "because the remote router was unavailable: "
+            f"{type(failure_reason).__name__}."
+        ),
+    )
+
+
+def route_message(message: str) -> RouteDecision:
+    try:
+        router = build_router()
+
+        decision = router.invoke(
+            [
+                SystemMessage(content=ROUTER_PROMPT),
+                HumanMessage(content=message),
+            ]
+        )
+
+        return decision
+
+    except Exception as exc:
+        return fallback_route_message(
+            message=message,
+            failure_reason=str(exc),
+        )
 
 
 TEST_CASES = [
@@ -165,6 +272,10 @@ def main() -> None:
     print("=" * 70)
     print("WEEK 7 - STRUCTURED ROUTER")
     print(f"MODEL: {MODEL_NAME}")
+    print(
+        f"REMOTE TIMEOUT: "
+        f"{ROUTER_TIMEOUT_SECONDS}s"
+    )
     print("=" * 70)
 
     correct = 0
