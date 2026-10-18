@@ -1,6 +1,4 @@
-Yes. Replace your entire `README.md` with the version below. I’ve kept your existing Week 4 and Week 5 documentation structure and extended it with the completed Week 6 work, rather than replacing the earlier material. :chatgpt-content-reference{index="0"} :chatgpt-content-reference{index="1"}
 
-```markdown
 # Library Internship Project
 
 This repository contains the Library Management project developed during the internship.
@@ -1802,5 +1800,135 @@ At the end of Week 6, the project includes:
 - Feature branch and pull request workflow
 
 Week 6 moves the project from a manually implemented RAG prototype toward a more resilient, interactive and production-shaped AI-enabled application.
+
+---
+
+# Week 7 - LangGraph Agents, Security, Evaluation and CI/CD
+
+Week 7 extends the Library Internship Project with an AI agent workflow, human approval, security controls, automated evaluation, and continuous integration.
+
+## Week 7 Features
+
+- LangGraph-based agent workflow
+- Tool routing and execution
+- Agent state and checkpoint management
+- Human-in-the-loop approval
+- Reservation-related agent actions
+- Agent run API
+- User ownership checks
+- Rate limiting
+- Angular agent timeline and approval interface
+- Agent evaluation and red-team testing
+- GitHub Actions CI pipeline
+
+## Week 7 Architecture
+
+```mermaid
+flowchart TD
+    A[Angular AI Assistant] --> B[ASP.NET Core API]
+    B --> C[FastAPI AI Service]
+    C --> D[LangGraph Agent]
+    D --> E[Library Tools]
+    E --> F[Library API]
+    F --> G[(SQL Server)]
+    D --> H[Checkpoint Storage]
+    B --> I[Agent Run Management]
+    I --> J[Human Approval]
 ```
 
+The Angular application communicates with the ASP.NET Core backend. The backend integrates with FastAPI, where the agent workflow and tool execution are implemented.
+
+## Agent Workflow
+
+The agent processes requests through planning, tool selection, execution, and response generation.
+
+Human approval is required for sensitive operations where configured.
+
+Agent execution includes validation, retry handling, and safeguards against unauthorized operations.
+
+## Security Controls
+
+Week 7 includes:
+
+- JWT authentication
+- Per-user ownership checks
+- Request validation
+- Tool argument validation
+- Rate limiting
+- Human approval for sensitive actions
+- Prompt-injection defenses
+- Resource and retry limits
+
+Security testing and known risks are documented in:
+
+- `docs/week7-red-team-report.md`
+- `docs/week7-tool-risk-table.md`
+
+## Evaluation
+
+Automated testing and evaluation cover agent behavior, tool routing, authorization, and failure handling.
+
+Evaluation reports:
+
+- `docs/week7-eval-report.md`
+- `ai-service/eval_results/week7_eval_results.csv`
+- `ai-service/eval_results/week7_eval_results.json`
+
+## Continuous Integration
+
+The GitHub Actions workflow is located at:
+
+`.github/workflows/ci.yml`
+
+It contains three jobs:
+
+1. .NET Build and Tests
+2. Angular Build
+3. Python Tests
+
+Pull Request #25 passed the required CI checks and was merged into `main`.
+
+Pull Request #26 demonstrated CI failure detection using an intentionally failing Python test. The PR was closed without merging.
+
+## Git Workflow
+
+Week 7 included:
+
+- Feature branches and pull requests
+- Interactive rebase practice
+- Git Bisect practice
+- Automated CI checks
+- Deliberately failing CI demonstration
+
+Practice branches:
+
+- `practice/week7-rebase`
+- `practice/week7-bisect`
+- `practice/week7-ci-failure`
+
+## Known Limitations
+
+- Live FastAPI-to-.NET agent integration encountered a timeout during testing.
+- External LLM availability and rate limits can affect agent responses.
+- Local development requires separate frontend, backend, and AI-service processes.
+- Production deployment, monitoring, and security hardening remain future work.
+- The previously exposed service credential must be rotated before production use.
+
+## Week 7 Documentation
+
+Additional technical details are available in:
+
+- `docs/week7-agent-loop-notes.md`
+- `docs/week7-part-c-evidence.md`
+- `docs/week7-part-d-evidence.md`
+- `docs/week7-eval-report.md`
+- `docs/week7-red-team-report.md`
+- `docs/week7-tool-risk-table.md`
+
+## Week 7 Release
+
+The planned final release tag is:
+
+`v0.7-week7`
+
+The tag will be created after final documentation, verification, and review are complete.
