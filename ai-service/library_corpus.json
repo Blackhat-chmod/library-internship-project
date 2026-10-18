@@ -6,7 +6,8 @@
     "categories": [
       "Uncategorized"
     ],
-    "text": "Title: Advanced C#\nAuthor: Hajra Ali\nCategories: Uncategorized\nDescription: Advanced C# is a library book written by Hajra Ali. It belongs to the following category or categories: Uncategorized."
+    "is_available": false,
+    "text": "Title: Advanced C#\nAuthor: Hajra Ali\nCategories: Uncategorized\nAvailable: False\nDescription: Advanced C# is a library book written by Hajra Ali. It belongs to the following category or categories: Uncategorized."
   },
   {
     "book_id": 8,
@@ -15,7 +16,8 @@
     "categories": [
       "Uncategorized"
     ],
-    "text": "Title: Persistent Library Book\nAuthor: Hajra Ali\nCategories: Uncategorized\nDescription: Persistent Library Book is a library book written by Hajra Ali. It belongs to the following category or categories: Uncategorized."
+    "is_available": false,
+    "text": "Title: Persistent Library Book\nAuthor: Hajra Ali\nCategories: Uncategorized\nAvailable: False\nDescription: Persistent Library Book is a library book written by Hajra Ali. It belongs to the following category or categories: Uncategorized."
   },
   {
     "book_id": 9,
@@ -24,7 +26,8 @@
     "categories": [
       "Uncategorized"
     ],
-    "text": "Title: Angular API Book\nAuthor: Hajra Ali\nCategories: Uncategorized\nDescription: Angular API Book is a library book written by Hajra Ali. It belongs to the following category or categories: Uncategorized."
+    "is_available": false,
+    "text": "Title: Angular API Book\nAuthor: Hajra Ali\nCategories: Uncategorized\nAvailable: False\nDescription: Angular API Book is a library book written by Hajra Ali. It belongs to the following category or categories: Uncategorized."
   },
   {
     "book_id": 11,
@@ -33,6 +36,47 @@
     "categories": [
       "Uncategorized"
     ],
-    "text": "Title: Angular Auth Test\nAuthor: Hajra Ali\nCategories: Uncategorized\nDescription: Angular Auth Test is a library book written by Hajra Ali. It belongs to the following category or categories: Uncategorized."
+    "is_available": false,
+    "text": "Title: Angular Auth Test\nAuthor: Hajra Ali\nCategories: Uncategorized\nAvailable: False\nDescription: Angular Auth Test is a library book written by Hajra Ali. It belongs to the following category or categories: Uncategorized."
+  },
+  {
+    "book_id": 12,
+    "title": "Week 7 Reservation Test Book",
+    "author": "Hajra Ali",
+    "categories": [
+      "Uncategorized"
+    ],
+    "is_available": false,
+    "text": "Title: Week 7 Reservation Test Book\nAuthor: Hajra Ali\nCategories: Uncategorized\nAvailable: False\nDescription: Week 7 Reservation Test Book is a library book written by Hajra Ali. It belongs to the following category or categories: Uncategorized."
+  },
+  {
+    "book_id": 13,
+    "title": "Week 7 Python Tool Test Book",
+    "author": "Hajra Ali",
+    "categories": [
+      "Uncategorized"
+    ],
+    "is_available": false,
+    "text": "Title: Week 7 Python Tool Test Book\nAuthor: Hajra Ali\nCategories: Uncategorized\nAvailable: False\nDescription: Week 7 Python Tool Test Book is a library book written by Hajra Ali. It belongs to the following category or categories: Uncategorized."
+  },
+  {
+    "book_id": 15,
+    "title": "Week 7 Part C Agent Test Book",
+    "author": "Hajra Ali",
+    "categories": [
+      "Uncategorized"
+    ],
+    "is_available": false,
+    "text": "Title: Week 7 Part C Agent Test Book\nAuthor: Hajra Ali\nCategories: Uncategorized\nAvailable: False\nDescription: Week 7 Part C Agent Test Book is a library book written by Hajra Ali. It belongs to the following category or categories: Uncategorized."
+  },
+  {
+    "book_id": 16,
+    "title": "Week 7 Alternative Book",
+    "author": "Hajra Ali",
+    "categories": [
+      "Uncategorized"
+    ],
+    "is_available": true,
+    "text": "Title: Week 7 Alternative Book\nAuthor: Hajra Ali\nCategories: Uncategorized\nAvailable: True\nDescription: Week 7 Alternative Book is a library book written by Hajra Ali. It belongs to the following category or categories: Uncategorized."
   }
 ]

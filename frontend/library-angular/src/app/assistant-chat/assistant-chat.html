@@ -1,31 +1,34 @@
 <div class="assistant-page">
   <div class="assistant-card">
+
     <div class="header">
       <div>
-        <h2>Library AI Assistant</h2>
+        <h2>Library AI Agent</h2>
         <p>
-          Ask a question and watch the answer stream live.
+          Ask the library agent, follow its progress,
+          and approve write actions when required.
         </p>
       </div>
 
-      @if (isStreaming) {
+      @if (isStreaming || isResuming) {
         <span class="streaming-badge">
-          Streaming...
+          Agent running...
         </span>
       }
     </div>
 
     <div class="question-section">
       <label for="question">
-        Your question
+        Your message
       </label>
 
       <textarea
         id="question"
         [(ngModel)]="question"
         rows="4"
-        placeholder="Example: Tell me about Advanced C#"
-        [disabled]="isStreaming"
+        maxlength="1000"
+        placeholder="Example: Reserve book 15 for me"
+        [disabled]="isStreaming || isResuming"
       ></textarea>
     </div>
 
@@ -34,18 +37,36 @@
         class="ask-button"
         type="button"
         (click)="ask()"
-        [disabled]="isStreaming"
+        [disabled]="
+          isStreaming ||
+          isResuming ||
+          isCancelling
+        "
       >
-        {{ isStreaming ? 'Generating...' : 'Ask AI' }}
+        {{
+          isStreaming
+            ? 'Running...'
+            : 'Run Agent'
+        }}
       </button>
 
-      @if (isStreaming) {
+      @if (
+        threadId &&
+        (isStreaming ||
+         isResuming ||
+         pendingApproval)
+      ) {
         <button
           class="stop-button"
           type="button"
-          (click)="stop()"
+          (click)="cancel()"
+          [disabled]="isCancelling"
         >
-          Stop
+          {{
+            isCancelling
+              ? 'Cancelling...'
+              : 'Cancel Run'
+          }}
         </button>
       }
 
@@ -53,40 +74,177 @@
         class="clear-button"
         type="button"
         (click)="clear()"
+        [disabled]="isCancelling"
       >
         Clear
       </button>
     </div>
 
+    @if (threadId) {
+      <div class="thread-box">
+        <span class="thread-label">
+          Thread
+        </span>
+
+        <code>{{ threadId }}</code>
+      </div>
+    }
+
+    @if (timeline.length > 0) {
+      <section class="timeline-section">
+        <h3>Agent Timeline</h3>
+
+        <div class="timeline">
+          @for (
+            item of timeline;
+            track $index
+          ) {
+            <div
+              class="timeline-item"
+              [class.timeline-error]="
+                item.kind === 'error'
+              "
+              [class.timeline-success]="
+                item.kind === 'final'
+              "
+              [class.timeline-approval]="
+                item.kind === 'approval'
+              "
+            >
+              <div class="timeline-marker"></div>
+
+              <div class="timeline-content">
+                <div class="timeline-title">
+                  {{ item.title }}
+                </div>
+
+                @if (item.detail) {
+                  <div class="timeline-detail">
+                    {{ item.detail }}
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    @if (pendingApproval) {
+      <section class="approval-card">
+        <div class="approval-header">
+          <div>
+            <h3>Approval Required</h3>
+
+            <p>
+              The agent wants to perform a
+              write action. Review it before
+              continuing.
+            </p>
+          </div>
+
+          <span class="approval-badge">
+            Waiting
+          </span>
+        </div>
+
+        @if (approvalCalls.length > 0) {
+          <div class="approval-calls">
+            @for (
+              call of approvalCalls;
+              track $index
+            ) {
+              <div class="approval-call">
+                <div class="tool-name">
+                  {{ call.name }}
+                </div>
+
+                <pre>{{
+                  formatArguments(call.args)
+                }}</pre>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="approval-call">
+            <div class="tool-name">
+              Pending write action
+            </div>
+
+            <p>
+              The saved run is waiting for
+              your approval.
+            </p>
+          </div>
+        }
+
+        <div class="approval-actions">
+          <button
+            class="approve-button"
+            type="button"
+            (click)="approve()"
+            [disabled]="
+              isResuming ||
+              isCancelling
+            "
+          >
+            {{
+              isResuming
+                ? 'Processing...'
+                : 'Approve'
+            }}
+          </button>
+
+          <button
+            class="reject-button"
+            type="button"
+            (click)="reject()"
+            [disabled]="
+              isResuming ||
+              isCancelling
+            "
+          >
+            Reject
+          </button>
+        </div>
+      </section>
+    }
+
     @if (answer) {
-      <div class="answer-section">
+      <section class="answer-section">
         <h3>Answer</h3>
 
         <div class="answer-box">
           {{ answer }}
-          @if (isStreaming) {
+
+          @if (isStreaming || isResuming) {
             <span class="cursor"></span>
           }
         </div>
-      </div>
+      </section>
     }
 
     @if (sources.length > 0) {
-      <div class="sources-section">
+      <section class="sources-section">
         <h3>Sources</h3>
 
         <ul>
-          @for (source of sources; track source) {
+          @for (
+            source of sources;
+            track source
+          ) {
             <li>{{ source }}</li>
           }
         </ul>
-      </div>
+      </section>
     }
 
     @if (errorMessage) {
       <div class="error-box">
+        <strong>Agent message:</strong>
         {{ errorMessage }}
       </div>
     }
+
   </div>
 </div>

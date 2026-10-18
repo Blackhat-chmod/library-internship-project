@@ -14,30 +14,48 @@ interface LoginResponse {
   providedIn: 'root'
 })
 export class AuthService {
-  private readonly apiUrl = 'https://localhost:7272/api/Auth';
-  private readonly tokenKey = 'library_token';
+  private readonly apiUrl =
+    'http://localhost:5087/api/Auth';
 
-  constructor(private http: HttpClient) {}
+  private readonly tokenKey =
+    'library_token';
 
-  login(email: string, password: string): Observable<LoginResponse> {
+  constructor(
+    private http: HttpClient
+  ) {}
+
+  login(
+    email: string,
+    password: string
+  ): Observable<LoginResponse> {
     return this.http
-      .post<LoginResponse>(`${this.apiUrl}/login`, {
-        email,
-        password
-      })
+      .post<LoginResponse>(
+        `${this.apiUrl}/login`,
+        {
+          email,
+          password
+        }
+      )
       .pipe(
         tap((response) => {
-          localStorage.setItem(this.tokenKey, response.token);
+          localStorage.setItem(
+            this.tokenKey,
+            response.token
+          );
         })
       );
   }
 
   logout(): void {
-    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(
+      this.tokenKey
+    );
   }
 
   getToken(): string | null {
-    return localStorage.getItem(this.tokenKey);
+    return localStorage.getItem(
+      this.tokenKey
+    );
   }
 
   isLoggedIn(): boolean {
@@ -48,13 +66,17 @@ export class AuthService {
     }
 
     try {
-      const payload = this.decodeToken(token);
+      const payload =
+        this.decodeToken(token);
 
       if (!payload.exp) {
         return true;
       }
 
-      return payload.exp * 1000 > Date.now();
+      return (
+        payload.exp * 1000 >
+        Date.now()
+      );
     } catch {
       return false;
     }
@@ -68,7 +90,8 @@ export class AuthService {
     }
 
     try {
-      const payload = this.decodeToken(token);
+      const payload =
+        this.decodeToken(token);
 
       return (
         payload.role ||
@@ -83,26 +106,38 @@ export class AuthService {
   }
 
   isAdmin(): boolean {
-    return this.getRole().toLowerCase() === 'admin';
+    return (
+      this.getRole().toLowerCase() ===
+      'admin'
+    );
   }
 
-  private decodeToken(token: string): any {
-    const payload = token.split('.')[1];
+  private decodeToken(
+    token: string
+  ): any {
+    const payload =
+      token.split('.')[1];
 
     const normalized = payload
       .replace(/-/g, '+')
       .replace(/_/g, '/');
 
-    const decoded = decodeURIComponent(
-      atob(normalized)
-        .split('')
-        .map(
-          (character) =>
-            '%' +
-            ('00' + character.charCodeAt(0).toString(16)).slice(-2)
-        )
-        .join('')
-    );
+    const decoded =
+      decodeURIComponent(
+        atob(normalized)
+          .split('')
+          .map(
+            (character) =>
+              '%' +
+              (
+                '00' +
+                character
+                  .charCodeAt(0)
+                  .toString(16)
+              ).slice(-2)
+          )
+          .join('')
+      );
 
     return JSON.parse(decoded);
   }

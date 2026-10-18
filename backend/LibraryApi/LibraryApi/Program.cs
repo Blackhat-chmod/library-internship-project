@@ -1,8 +1,11 @@
+using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 using LibraryApi.Data;
 using LibraryApi.Repositories;
 using LibraryApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -54,6 +57,37 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode =
+        StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy(
+        "AssistantAgentPolicy",
+        httpContext =>
+        {
+            string partitionKey =
+                httpContext.User.FindFirstValue(
+                    ClaimTypes.NameIdentifier
+                )
+                ?? "anonymous";
+
+            return RateLimitPartition
+                .GetFixedWindowLimiter(
+                    partitionKey,
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 20,
+                        Window =
+                            TimeSpan.FromMinutes(1),
+                        QueueLimit = 0,
+                        AutoReplenishment = true
+                    }
+                );
+        }
+    );
+});
 
 builder.Services.AddEndpointsApiExplorer();
 
@@ -170,6 +204,50 @@ builder.Services.AddHttpClient(
     }
 );
 
+builder.Services
+    .AddHttpClient(
+        "AiAgentClient",
+        client =>
+        {
+            string baseUrl =
+                builder.Configuration[
+                    "AiService:BaseUrl"
+                ]
+                ?? "http://127.0.0.1:8000/";
+
+            client.BaseAddress =
+                new Uri(baseUrl);
+
+            client.Timeout =
+                Timeout.InfiniteTimeSpan;
+        }
+    )
+    .AddPolicyHandler(
+        HttpPolicyExtensions
+            .HandleTransientHttpError()
+            .CircuitBreakerAsync(
+                handledEventsAllowedBeforeBreaking: 3,
+                durationOfBreak:
+                    TimeSpan.FromSeconds(30),
+                onBreak: (
+                    outcome,
+                    breakDelay
+                ) =>
+                {
+                    Console.WriteLine(
+                        "AI agent circuit opened for " +
+                        $"{breakDelay.TotalSeconds} seconds."
+                    );
+                },
+                onReset: () =>
+                {
+                    Console.WriteLine(
+                        "AI agent circuit reset."
+                    );
+                }
+            )
+    );
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(
@@ -201,8 +279,12 @@ app.UseCors("AllowAngular");
 
 app.UseAuthentication();
 
+app.UseRateLimiter();
+
 app.UseAuthorization();
 
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }
